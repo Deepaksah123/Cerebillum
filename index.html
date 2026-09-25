@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cerebellum Reconstructed UI</title><style>html,body{margin:0;padding:0;background:#fff}#status{font:14px system-ui;padding:16px;color:#555}</style></head>
+<body><div id="status">Loading reconstructed Cerebellum UI…</div><script>
+(async()=>{try{
+const n=41, parts=[];
+for(let i=1;i<=n;i++){const u='./deploy-parts/part'+String(i).padStart(3,'0')+'.txt'; const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('Part '+i+' HTTP '+r.status); parts.push(await r.text());}
+const html=parts.join('');
+document.open(); document.write(html); document.close();
+}catch(e){document.body.innerHTML='<pre style="padding:20px;white-space:pre-wrap;font:14px monospace">Reconstruction load error: '+String(e.message||e)+'</pre>';}}
+)();
+</script></body></html>
