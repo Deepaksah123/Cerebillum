@@ -1,0 +1,244 @@
+lectedModule?.questionIndex||0];}
+  function renderAnswerReview(index){
+    if(!anatomy()) return;
+    const list=window.moduleQuestions||[], m=window.selectedModule, q=list[index];
+    if(!q||!m) return;
+    m.questionIndex=index;
+    const st=getModuleState(m.subject,m.module), id=String(q.id||q.unique_key||('q-'+index));
+    const saved=st.answers?.[id];
+    const opts=q.choices||[];
+    $('reviewModule') && ($('reviewModule').textContent='Anatomy · Brain · '+m.module);
+    $('reviewInfo') && ($('reviewInfo').textContent=(index+1)+' / '+list.length);
+    const box=document.querySelector('#answerReview .answer-image');
+    if(box){box.className='answer-image question-content';box.innerHTML=q.text||'<p>Question content unavailable.</p>';}
+    document.querySelectorAll('#answerReview .answer-option').forEach((b,i)=>{
+      b.classList.remove('selected','locked','correct','wrong');
+      const t=b.querySelector('.otext'); if(t)t.innerHTML=opts[i]?.text||'';
+      b.style.display=i<opts.length?'flex':'none'; b.style.pointerEvents='none';
+      const ci=opts.findIndex(x=>x.id===q.correct_choice_id);
+      if(i===ci)b.classList.add('correct');
+      if(saved!==undefined && i===saved && i!==ci)b.classList.add('wrong');
+      if(saved!==undefined && i===saved)b.classList.add('selected');
+    });
+    const ex=$('answerExplanation');
+    if(ex){ex.style.display='block';ex.className='explanation-panel show';ex.innerHTML='<b>Explanation</b><div class="solution-content">'+(q.solution||'<p>Explanation unavailable.</p>')+'</div>';}
+    let nav=document.querySelector('#answerReview .review-nav');
+    if(!nav){
+      nav=document.createElement('div');nav.className='review-nav';
+      nav.innerHTML='<button id="arPrev">← Previous</button><button id="arIndex" class="primary-review">Index</button><button id="arNext">Next →</button>';
+      document.querySelector('#answerReview').appendChild(nav);
+    }
+    nav.querySelector('#arPrev').onclick=()=>{if(m.questionIndex>0)renderAnswerReview(m.questionIndex-1)};
+    nav.querySelector('#arNext').onclick=()=>{if(m.questionIndex<list.length-1)renderAnswerReview(m.questionIndex+1)};
+    nav.querySelector('#arIndex').onclick=()=>{renderReviewGrid();go('review')};
+  }
+  window.renderAnswerReview=renderAnswerReview;
+
+  // Replace the review page navigation with real, stateful question jumps.
+  const oldRenderReviewGrid=window.renderReviewGrid;
+  window.renderReviewGrid=function(){
+    if(!anatomy()){return oldRenderReviewGrid?.();}
+    const g=$('reviewGrid'),m=window.selectedModule,list=window.moduleQuestions||[]; if(!g||!m)return;
+    const st=getModuleState(m.subject,m.module); g.innerHTML=''; let correct=0,wrong=0,attempted=0;
+    list.forEach((q,i)=>{
+      const id=String(q.id||q.unique_key||('q-'+i)), a=st.answers?.[id], ci=(q.choices||[]).findIndex(x=>x.id===q.correct_choice_id);
+      if(a!==undefined){attempted++; if(a===ci)correct++; else wrong++;}
+      const cell=document.createElement('button');
+      cell.type='button';cell.className='review-cell '+(i===m.questionIndex?'current ':'')+(a!==undefined?(a===ci?'correct':'wrong'):'unanswered');
+      cell.innerHTML='<span>'+String(i+1)+'</span><i>'+(a!==undefined?(a===ci?'✓':'×'):'»')+'</i>';
+      cell.onclick=()=>{m.questionIndex=i;renderModuleQuestion(i);go('practice');};
+      g.appendChild(cell);
+    });
+    safe(['reviewPending',list.length-attempted]);safe(['reviewCorrect',correct]);safe(['reviewWrong',wrong]);safe(['reviewAttempted',attempted+'/'+list.length+' Attempted']);
+    safe(['reviewModule','Anatomy · Brain · '+m.module]);safe(['reviewInfo',(m.questionIndex+1)+' / '+list.length]);
+  };
+
+  // Make View Analysis from Index useful for Anatomy.
+  window.confirmExitTest=window.confirmExitTest||function(){go('tests')};
+  // Ensure go() opens the right question whenever review-solutions is entered.
+  const prevGo=window.go;
+  window.go=function(id,push=true){
+    prevGo(id,push);
+    if(id==='review'&&anatomy()) window.renderReviewGrid();
+    if(id==='answerReview'&&anatomy()) window.renderAnswerReview(window.selectedModule.questionIndex||0);
+    if(id==='practice'&&anatomy()){
+      const nav=document.getElementById('anatomyQNav'); if(nav) nav.style.display='grid';
+    }
+  };
+
+  // The Result page's Review Solutions button should render the current question immediately.
+  document.addEventListener('click',function(e){
+    const b=e.target.closest('#moduleResult .review-solutions');
+    if(b&&anatomy()){setTimeout(()=>renderAnswerReview(window.selectedModule.questionIndex||0),0);}
+  },true);
+})();
+
+;
+
+(function(){
+  const $=id=>document.getElementById(id);
+  const isAnatomy=()=>window.selectedModule&&window.selectedModule.subject==='Anatomy';
+  function answerIndex(q,st){
+    const id=String(q.id||q.unique_key||'');
+    const saved=st.answers?.[id];
+    if(saved===undefined||saved===null)return null;
+    const opts=q.choices||[];
+    const ci=opts.findIndex(x=>String(x.id)===String(q.correct_choice_id));
+    return {saved:Number(saved),correct:ci};
+  }
+  function calc(){
+    const m=window.selectedModule;if(!m)return {total:0,attempted:0,correct:0,wrong:0,pending:0,accuracy:0};
+    const st=getModuleState(m.subject,m.module),list=window.moduleQuestions||[];
+    let correct=0,wrong=0,attempted=0;
+    list.forEach(q=>{const a=answerIndex(q,st);if(a){attempted++;if(a.saved===a.correct)correct++;else wrong++;}});
+    const total=list.length||st.questionCount||0;
+    return {total,attempted,correct,wrong,pending:Math.max(0,total-attempted),accuracy:attempted?Math.round(correct/attempted*100):0};
+  }
+  function renderAdaptiveGraph(accuracy){
+    const el=document.querySelector('#moduleResult .analysis-curve');
+    if(!el)return;
+    const pct=Math.max(0,Math.min(100,Number(accuracy)||0));
+    const w=300,h=170,x1=22,y1=126,x2=278,y2=126;
+    const cx=150, cy=126, rx=128, ry=112;
+    const startX=x1,startY=y1,endX=x2,endY=y2;
+    const path=`M ${startX} ${startY} Q 150 8 ${endX} ${endY}`;
+    const pathLen=340;
+    const dash=pathLen*pct/100;
+    const angle=Math.PI-(Math.PI*pct/100);
+    const px=cx+rx*Math.cos(angle), py=cy-ry*Math.sin(angle);
+    el.innerHTML=`<svg class="adaptive-graph" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" aria-label="Adaptive performance graph"><path class="graph-track" d="${path}" pathLength="${pathLen}"/><path class="graph-progress" d="${path}" pathLength="${pathLen}" stroke-dasharray="${dash} ${pathLen-dash}"/><circle class="graph-dot" cx="${px}" cy="${py}" r="8"/><rect class="graph-you" x="${Math.max(8,px-34)}" y="${Math.max(18,py-45)}" width="68" height="28" rx="9"/><text class="graph-label" x="${px}" y="${Math.max(37,py-26)}" text-anchor="middle">You</text><text class="graph-value" x="150" y="157" text-anchor="middle">${pct}%</text></svg>`;
+  }
+  function updateAdaptiveResult(){
+    if(!isAnatomy())return;
+    const m=window.selectedModule, d=calc();
+    const set=(id,v)=>{const e=$(id);if(e)e.textContent=v};
+    set('resultTitle',m.module);set('resultTitleHero',m.module);set('resultSubject',m.subject);set('resultSubjectHero',m.subject);
+    const qLine=document.querySelector('#moduleResult .result-hero p[style*="margin-top"]');if(qLine)qLine.textContent=d.total+' Questions';
+    const cards=document.querySelectorAll('#moduleResult .result-card b');if(cards.length>=3){cards[0].textContent=d.correct;cards[1].textContent=d.wrong;cards[2].textContent=d.pending;}
+    const date=document.querySelector('#moduleResult .result-date');if(date)date.textContent=d.attempted===d.total&&d.total?'Module completed · '+d.total+'/'+d.total+' attempted':'Live progress · '+d.attempted+'/'+d.total+' attempted';
+    const note=document.querySelector('#moduleResult .analysis-note');if(note)note.textContent=d.attempted?'Accuracy '+d.accuracy+'% · '+d.correct+' correct out of '+d.attempted+' attempted.':'Start answering questions to populate your performance data.';
+    const mini=document.querySelectorAll('#moduleResult .analysis-mini .am b');if(mini.length>=2){mini[0].textContent=d.attempted?d.accuracy+'%':'—';mini[1].textContent=d.attempted?d.attempted+'/'+d.total:'—';}
+    let wrap=document.querySelector('#moduleResult .adaptive-analysis');
+    if(!wrap){wrap=document.createElement('div');wrap.className='adaptive-analysis';const anchor=document.querySelector('#moduleResult .analysis-note');if(anchor)anchor.insertAdjacentElement('afterend',wrap);}
+    if(wrap)wrap.innerHTML='<div class="aa"><b>'+d.attempted+'</b><small>Attempted</small></div><div class="aa"><b>'+d.pending+'</b><small>Remaining</small></div><div class="aa"><b>'+d.accuracy+'%</b><small>Accuracy</small></div>';
+    renderAdaptiveGraph(d.accuracy);
+  }
+  const oldUpdate=window.updateResultScreen;
+  window.updateResultScreen=function(){try{oldUpdate?.()}catch(e){}updateAdaptiveResult()};
+  const oldSelect=window.selectAnswer;
+  window.selectAnswer=function(btn){oldSelect?.(btn);setTimeout(updateAdaptiveResult,0)};
+  const oldFinish=window.finishModule;
+  window.finishModule=function(){try{oldFinish?.()}finally{setTimeout(updateAdaptiveResult,20)}};
+  const oldGo=window.go;
+  window.go=function(id,push=true){oldGo(id,push);if(id==='moduleResult')setTimeout(updateAdaptiveResult,0);if(id==='review')setTimeout(()=>window.renderReviewGrid?.(),0)};
+  // Ensure Review Solutions is live and the result screen never remains a static placeholder.
+  document.addEventListener('click',e=>{if(e.target.closest('#moduleResult .review-solutions'))setTimeout(updateAdaptiveResult,0)},true);
+  window.addEventListener('resize',()=>{if(document.querySelector('#moduleResult.active'))updateAdaptiveResult()});
+  setTimeout(updateAdaptiveResult,50);
+})();
+
+;
+
+(function(){
+  /* Global, module-agnostic result/review adaptation. */
+  const getAnswers=function(){
+    const m=window.selectedModule;if(!m||typeof getModuleState!=='function')return null;
+    const st=getModuleState(m.subject,m.module)||{}; const qs=window.moduleQuestions||[];
+    let attempted=0,correct=0,wrong=0;
+    qs.forEach(q=>{const id=String(q.id||q.unique_key||'');const saved=st.answers&&st.answers[id];if(saved!==undefined&&saved!==null){attempted++;const ci=(q.choices||[]).findIndex(x=>String(x.id)===String(q.correct_choice_id));Number(saved)===ci?correct++:wrong++;}});
+    const total=qs.length||st.questionCount||0; return {total,attempted,correct,wrong,pending:Math.max(0,total-attempted),accuracy:attempted?Math.round(correct/attempted*100):0};
+  };
+  window.renderGlobalAdaptiveGraph=function(){
+    document.querySelectorAll('.analysis-curve').forEach(el=>{
+      const d=getAnswers();if(!d)return;const pct=Math.max(0,Math.min(100,d.accuracy));
+      const w=300,h=170,x1=22,y=126,x2=278,path=`M ${x1} ${y} Q 150 8 ${x2} ${y}`,len=340,ang=Math.PI-Math.PI*pct/100,rx=128,ry=112,cx=150,px=cx+rx*Math.cos(ang),py=y-ry*Math.sin(ang),dash=len*pct/100;
+      el.innerHTML=`<svg class="adaptive-graph" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" aria-label="Adaptive performance graph"><path class="graph-track" d="${path}" pathLength="${len}"/><path class="graph-progress" d="${path}" pathLength="${len}" stroke-dasharray="${dash} ${len-dash}"/><circle class="graph-dot" cx="${px}" cy="${py}" r="8"/><rect class="graph-you" x="${Math.max(8,px-34)}" y="${Math.max(18,py-45)}" width="68" height="28" rx="9"/><text class="graph-label" x="${px}" y="${Math.max(37,py-26)}" text-anchor="middle">You</text><text class="graph-value" x="150" y="157" text-anchor="middle">${pct}%</text></svg>`;
+    });
+  };
+  window.updateGlobalResultUI=function(){
+    const d=getAnswers();if(!d)return;
+    document.querySelectorAll('.result-card b').forEach((e,i)=>{e.textContent=[d.correct,d.wrong,d.pending][i]??e.textContent});
+    document.querySelectorAll('.analysis-mini .am b').forEach((e,i)=>{e.textContent=i===0?(d.attempted?d.accuracy+'%':'—'):(d.attempted?d.attempted+'/'+d.total:'—')});
+    document.querySelectorAll('.analysis-note').forEach(e=>e.textContent=d.attempted?`Accuracy ${d.accuracy}% · ${d.correct} correct out of ${d.attempted} attempted.`:'Start answering questions to populate your performance data.');
+    document.querySelectorAll('.result-date').forEach(e=>e.textContent=d.total&&d.attempted===d.total?`Module completed · ${d.total}/${d.total} attempted`:`Live progress · ${d.attempted}/${d.total} attempted`);
+    window.renderGlobalAdaptiveGraph();
+  };
+  const wrap=(name)=>{const old=window[name];if(typeof old!=='function'||old.__globalWrapped)return;const f=function(){const r=old.apply(this,arguments);setTimeout(window.updateGlobalResultUI,0);return r};f.__globalWrapped=true;window[name]=f};
+  ['selectAnswer','finishModule','updateResultScreen','renderReviewGrid'].forEach(wrap);
+  window.addEventListener('resize',()=>setTimeout(window.renderGlobalAdaptiveGraph,0));
+  window.addEventListener('themechange',()=>setTimeout(window.renderGlobalAdaptiveGraph,0));
+  document.addEventListener('click',e=>{if(e.target.closest('.review-solutions,.result-footer,.question-actions,.review-actions'))setTimeout(window.updateGlobalResultUI,0)},true);
+  setTimeout(window.updateGlobalResultUI,100);
+})();
+
+;
+
+(function(){
+  function qs(s){return document.querySelector(s)}
+  function escSvg(v){return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function anatomySummary(){
+    if(!window.SUBS || !window.getModuleState) return null;
+    let attempted=0,correct=0,total=0,completed=0;
+    window.SUBS.forEach(function(pair){
+      var key=pair[0],name=pair[1], qs=(window.A&&window.A[key]&&window.A[key].questions)||[];
+      var st=getModuleState('Anatomy',name); total+=qs.length;
+      if(st.completed) completed++;
+      attempted += Array.isArray(st.attemptedIds)?st.attemptedIds.length:0;
+      if(st.answers) Object.keys(st.answers).forEach(function(id){if(st.answers[id] && st.answers[id].correct===true) correct++});
+    });
+    return {attempted:attempted,correct:correct,total:total,completed:completed};
+  }
+  function genericSummary(subject){
+    var mods=window.makeModules?window.makeModules(subject):[]; var attempted=0,correct=0,total=0,completed=0;
+    mods.forEach(function(m){var st=getModuleState(subject,m); total+=Number(st.questionCount||0); attempted+=Array.isArray(st.attemptedIds)?st.attemptedIds.length:0; if(st.completed)completed++; if(st.answers)Object.keys(st.answers).forEach(function(id){if(st.answers[id]&&st.answers[id].correct===true)correct++});});
+    return {attempted:attempted,correct:correct,total:total,completed:completed};
+  }
+  function renderAccuracy(summary){
+    var card=qs('#modules .accuracy-card'); if(!card)return;
+    var pct=summary.attempted?Math.round(summary.correct/summary.attempted*100):0;
+    var old=card.querySelector('.curve');
+    if(old){
+      var wrap=document.createElement('div'); wrap.className='adaptive-accuracy';
+      var w=520,h=128,pad=30,cx1=pad,cx2=w-pad,cy=112,rx=(cx2-cx1)/2,ry=86;
+      var theta=(Math.PI*(1-pct/100));
+      var x=cx1+(cx2-cx1)*(pct/100), y=cy-Math.sin(Math.PI*(pct/100))*ry;
+      var d='M '+cx1+' '+cy+' A '+rx+' '+ry+' 0 0 1 '+cx2+' '+cy;
+      var pathLen=Math.PI*rx;
+      wrap.innerHTML='<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Subject accuracy '+pct+' percent"><path class="track" d="'+d+'"/><path class="progress" d="'+d+'" pathLength="100" stroke-dasharray="100" stroke-dashoffset="'+(100-pct)+'"/><circle class="marker" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="7"/><text class="value" x="'+(w/2)+'" y="68">'+pct+'%</text><text class="caption" x="'+(w/2)+'" y="88">'+summary.correct+' correct / '+summary.attempted+' attempted</text></svg>';
+      old.replaceWith(wrap);
+    }
+    var small=card.querySelector('.adaptive-strength');
+    if(!small){small=document.createElement('div');small.className='adaptive-strength';card.querySelector('.scale')?.after(small)}
+    small.textContent=summary.attempted?(pct>=80?'Strong performance':pct>=60?'Good progress':pct>=40?'Developing':'Keep practicing'):'No attempts yet';
+    var metric=card.querySelector('.sm-card small'); if(metric)metric.textContent='Subject Accuracy · '+pct+'%';
+    var metric2=card.querySelectorAll('.sm-card small')[1]; if(metric2)metric2.textContent='Subject Strength · '+(summary.total?Math.round(summary.attempted/summary.total*100):0)+'% covered';
+  }
+  function adaptiveStats(){
+    var subject=window.selectedSubject||''; var summary=subject==='Anatomy'?anatomySummary():genericSummary(subject||'Subject');
+    if(!summary)return;
+    var a=qs('#moduleCompletedCount'),b=qs('#quesAttemptedCount'); if(a)a.textContent=summary.completed; if(b)b.textContent=summary.attempted;
+    renderAccuracy(summary);
+  }
+  var oldUS=window.updateSubjectStats;
+  window.updateSubjectStats=function(){var r=oldUS?oldUS.apply(this,arguments):null; adaptiveStats(); return r};
+  var oldOBM=window.openBrainModule;
+  if(oldOBM) window.openBrainModule=function(){oldOBM.apply(this,arguments);adaptiveStats()};
+  var oldOAS=window.openAnatomySubmodule;
+  if(oldOAS) window.openAnatomySubmodule=function(){oldOAS.apply(this,arguments);adaptiveStats()};
+  /* Replace text glyph artwork with code-built SVG. */
+  function replaceSubjectArt(){var a=qs('#modules .subject-art');if(a&&!a.querySelector('svg'))a.innerHTML='<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="21" fill="none" stroke="currentColor" stroke-width="3"/><path d="M11 32h42" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M32 11a21 21 0 0 1 0 42" fill="currentColor" opacity=".12"/></svg>'}
+  document.addEventListener('click',function(){setTimeout(function(){replaceSubjectArt();adaptiveStats()},0)});
+  document.addEventListener('DOMContentLoaded',function(){replaceSubjectArt();adaptiveStats()});
+  /* Global answer persistence: enables real accuracy on every module, not only Anatomy. */
+  window.selectAnswer=(function(old){return function(btn){
+    var m=window.selectedModule,qid=window.currentQuestionId,q=window.moduleQuestions&&window.moduleQuestions[m?.questionIndex||0];
+    if(m&&qid&&q){
+      var st=getModuleState(m.subject,m.module); st.answers=st.answers||{}; var idx=Array.prototype.indexOf.call(btn.parentElement.querySelectorAll('.answer-option'),btn); var choices=q.choices||q.options||[]; var choice=choices[idx]; var cid=choice&&choice.id; var correctId=q.correct_choice_id||q.correct_answer_id||q.correctAnswerId; var isCorrect=(cid!=null&&correctId!=null)?String(cid)===String(correctId):null;
+      st.answers[String(qid)]={choiceId:cid!=null?cid:null,index:idx,correct:isCorrect===true};
+      if(!Array.isArray(st.attemptedIds))st.attemptedIds=[]; if(!st.attemptedIds.includes(qid))st.attemptedIds.push(qid); st.started=true; st.questionCount=choices.length?Math.max(st.questionCount||0,window.moduleQuestions.length):st.questionCount; st.lastQuestion=m.questionIndex||0; saveModuleState(m.subject,m.module);
+    }
+    if(old)old(btn); adaptiveStats();
+  }})(window.selectAnswer);
+})();
+</script></body></html>
+
