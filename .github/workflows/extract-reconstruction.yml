@@ -1,5 +1,9 @@
 name: Cerebillum Reconstruction
-on: [push, workflow_dispatch]
+on:
+  push:
+    paths-ignore:
+      - 'reconstruction/**'
+  workflow_dispatch:
 permissions:
   contents: write
 
@@ -385,4 +389,98 @@ jobs:
           git add reconstruction/analysis/deep
           if git diff --cached --quiet; then exit 0; fi
           git commit -m 'Add deep Cerebillum reconstruction analysis'
+          git push origin HEAD:main
+
+  autonomous-controller:
+    needs: aggregate-deep-analysis
+    if: ${{ needs.aggregate-deep-analysis.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Autonomous pipeline controller
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p reconstruction/automation
+          state="reconstruction/automation/STATE.md"
+          log="reconstruction/automation/controller.log"
+          exec > >(tee -a "$log") 2>&1
+
+          phase() {
+            printf '%s\n' "$1" > "$state"
+            echo "=== $1 ==="
+          }
+
+          retry() {
+            local n=1 max=3
+            until "$@"; do
+              if [ "$n" -ge "$max" ]; then
+                echo "FAILED after $max attempts: $*"
+                return 1
+              fi
+              echo "Retry $n/$max: $*"
+              n=$((n+1))
+              sleep 5
+            done
+          }
+
+          phase "EXTRACTED"
+          test -d reconstruction/apk_root
+          test -f reconstruction/analysis/ORGANIZATION_MANIFEST.md
+
+          phase "PARALLEL_ANALYSIS_COMPLETE"
+          for f in             reconstruction/analysis/batches/structure.md             reconstruction/analysis/batches/dex.md             reconstruction/analysis/batches/native.md             reconstruction/analysis/batches/resources.md             reconstruction/analysis/batches/media-assets.md             reconstruction/analysis/batches/unknown.md; do
+            test -s "$f"
+          done
+
+          phase "DEEP_ANALYSIS_COMPLETE"
+          for f in             reconstruction/analysis/deep/manifest.md             reconstruction/analysis/deep/dex-symbols.md             reconstruction/analysis/deep/native-elf.md             reconstruction/analysis/deep/media-types.md             reconstruction/analysis/deep/unknown-types.md; do
+            test -s "$f"
+          done
+
+          phase "RECONSTRUCTION_READY"
+          mkdir -p reconstruction/project reconstruction/build reconstruction/validation
+
+          # Determine the next executable reconstruction target automatically.
+          if [ -f reconstruction/project/settings.gradle ] || [ -f reconstruction/project/settings.gradle.kts ]; then
+            echo "Existing Android project detected."
+            phase "BUILD_PENDING"
+          elif [ -f reconstruction/project/build.gradle ] || [ -f reconstruction/project/build.gradle.kts ]; then
+            echo "Existing Gradle project detected."
+            phase "BUILD_PENDING"
+          else
+            echo "No Android project exists yet; generating machine-readable reconstruction manifest."
+            {
+              echo "# Autonomous Reconstruction Manifest"
+              echo
+              echo "Generated: $(date -u +%FT%TZ)"
+              echo
+              echo "## Source"
+              find reconstruction/apk_root -type f | sort
+              echo
+              echo "## Analysis"
+              find reconstruction/analysis -type f | sort
+              echo
+              echo "## Next automated target"
+              echo "Create Android-compatible project from verified manifest/DEX/native/resource inventory."
+            } > reconstruction/project/RECONSTRUCTION_MANIFEST.md
+            phase "PROJECT_GENERATION_PENDING"
+          fi
+
+          phase "AUTOMATION_HEALTHY"
+          echo "Controller completed without manual intervention."
+
+      - name: Commit controller state
+        run: |
+          set -e
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add reconstruction/automation reconstruction/project
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Run autonomous Cerebillum pipeline controller'
           git push origin HEAD:main
