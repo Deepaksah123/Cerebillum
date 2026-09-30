@@ -148,3 +148,112 @@ jobs:
           if git diff --cached --quiet; then exit 0; fi
           git commit -m 'Organize Cerebillum reconstruction tree'
           git push origin HEAD:main
+
+
+  analyze:
+    needs: extract
+    strategy:
+      fail-fast: false
+      matrix:
+        batch: [structure, dex, native, resources, media-assets, unknown]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Analyze batch
+        run: |
+          set -e
+          root="reconstruction/apk_root"
+          out="reconstruction/analysis/batches"
+          mkdir -p "$out"
+          case "${{ matrix.batch }}" in
+            structure)
+              {
+                echo "# Structure Batch"
+                echo
+                find "$root" -maxdepth 2 -type d -print | sort
+                echo
+                echo "Top-level files:"
+                find "$root" -maxdepth 1 -type f -printf '%f\\t%s bytes\\n' | sort
+              } > "$out/structure.md"
+              ;;
+            dex)
+              {
+                echo "# DEX Batch"
+                echo
+                for f in "$root"/dex/*.dex; do
+                  echo "## $(basename "$f")"
+                  stat -c 'Size: %s bytes' "$f"
+                  sha256sum "$f"
+                  echo
+                done
+              } > "$out/dex.md"
+              ;;
+            native)
+              {
+                echo "# Native Batch"
+                echo
+                find "$root/lib" -type f -print | sort
+                echo
+                find "$root/lib" -type f -printf '%s\\t%p\\n' | sort -nr
+              } > "$out/native.md"
+              ;;
+            resources)
+              {
+                echo "# Resources Batch"
+                echo
+                find "$root/resources" -type f -printf '%s\\t%p\\n' | sort -nr | head -300
+                echo
+                echo "Resource file count: $(find "$root/resources" -type f | wc -l)"
+              } > "$out/resources.md"
+              ;;
+            media-assets)
+              {
+                echo "# Media + Assets Batch"
+                echo
+                echo "Media count: $(find "$root/media" -type f | wc -l)"
+                echo "Asset count: $(find "$root/assets" -type f | wc -l)"
+                echo
+                echo "Largest media:"
+                find "$root/media" -type f -printf '%s\\t%p\\n' | sort -nr | head -100
+              } > "$out/media-assets.md"
+              ;;
+            unknown)
+              {
+                echo "# Unknown Batch"
+                echo
+                echo "Unknown count: $(find "$root/unknown" -type f | wc -l)"
+                echo
+                file "$root"/unknown/* 2>/dev/null | head -300 || true
+              } > "$out/unknown.md"
+              ;;
+          esac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cerebillum-${{ matrix.batch }}
+          path: reconstruction/analysis/batches/${{ matrix.batch }}.md
+
+  aggregate-analysis:
+    needs: analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cerebillum-*
+          path: reconstruction/analysis/batches
+          merge-multiple: true
+      - name: Commit parallel analysis
+        run: |
+          set -e
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add reconstruction/analysis/batches
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Add parallel Cerebillum reconstruction analysis'
+          git push origin HEAD:main
