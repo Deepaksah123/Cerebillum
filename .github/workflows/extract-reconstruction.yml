@@ -2,11 +2,13 @@ name: Cerebillum Reconstruction
 on: [push, workflow_dispatch]
 permissions:
   contents: write
+
 jobs:
   extract:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Verify ZIPs
         run: |
           set -e
@@ -14,32 +16,135 @@ jobs:
             test -s "$z"
             unzip -tqq "$z"
           done
-      - name: Extract
+
+      - name: Extract to staging
         run: |
           set -e
-          rm -rf reconstruction/apk_root reconstruction/analysis
-          mkdir -p reconstruction/apk_root reconstruction/analysis
+          rm -rf reconstruction/_staging reconstruction/apk_root reconstruction/analysis
+          mkdir -p reconstruction/_staging reconstruction/apk_root reconstruction/analysis
           for z in 01_core_dex.zip 02_dex_3_4.zip 03_dex5_lib_assets.zip 04_remaining_resources.zip; do
-            unzip -q -o "$z" -d reconstruction/apk_root
+            unzip -q -o "$z" -d reconstruction/_staging
           done
-      - name: Inventory
+
+      - name: Organize APK tree
         run: |
           set -e
-          find reconstruction/apk_root -type f -print | sort > reconstruction/analysis/EXTRACTED_FILE_LIST.txt
-          find reconstruction/apk_root -type f -print0 | sort -z | xargs -0 sha256sum > reconstruction/analysis/EXTRACTED_SHA256.txt
-          echo '# Cerebillum Reconstruction Manifest' > reconstruction/analysis/IMPORT_MANIFEST.md
-          echo >> reconstruction/analysis/IMPORT_MANIFEST.md
-          echo 'Extracted file count:' >> reconstruction/analysis/IMPORT_MANIFEST.md
-          find reconstruction/apk_root -type f | wc -l >> reconstruction/analysis/IMPORT_MANIFEST.md
-          echo >> reconstruction/analysis/IMPORT_MANIFEST.md
-          echo 'DEX files:' >> reconstruction/analysis/IMPORT_MANIFEST.md
-          find reconstruction/apk_root -type f -name '*.dex' -print | sort >> reconstruction/analysis/IMPORT_MANIFEST.md
-      - name: Commit reconstruction
+          cd reconstruction/_staging
+          root="$GITHUB_WORKSPACE/reconstruction/apk_root"
+          mkdir -p "$root"/{manifest,dex,resources,resources/xml,resources/other,assets,lib,meta-inf,media,config,archives,unknown}
+
+          move_file() {
+            src="$1"; dest="$2"
+            mkdir -p "$(dirname "$root/$dest")"
+            mv "$src" "$root/$dest"
+          }
+
+          # Standard APK top-level entries.
+          [ ! -e AndroidManifest.xml ] || move_file AndroidManifest.xml manifest/AndroidManifest.xml
+          for f in classes*.dex; do
+            [ -e "$f" ] || continue
+            move_file "$f" "dex/$f"
+          done
+          [ ! -e resources.arsc ] || move_file resources.arsc resources/resources.arsc
+
+          # Preserve standard APK directories with their original internal paths.
+          for d in assets lib res META-INF; do
+            if [ -d "$d" ]; then
+              target="$root/$d"
+              mkdir -p "$target"
+              cp -a "$d"/. "$target"/
+              rm -rf "$d"
+            fi
+          done
+
+          # Root-level XML/config/media/archive files.
+          find . -maxdepth 1 -type f -print0 | while IFS= read -r -d '' f; do
+            b="${f#./}"
+            case "$b" in
+              *.xml) move_file "$f" "resources/xml/$b" ;;
+              *.json|*.properties|*.cfg|*.conf|*.ini|*.txt) move_file "$f" "config/$b" ;;
+              *.png|*.jpg|*.jpeg|*.webp|*.gif|*.bmp|*.svg|*.avif|*.ico) move_file "$f" "media/$b" ;;
+              *.zip|*.jar|*.aar|*.apk|*.aab|*.7z|*.gz|*.tar|*.xz) move_file "$f" "archives/$b" ;;
+              *) ;;
+            esac
+          done
+
+          # Extension-less/obfuscated root files: classify by magic, never discard.
+          find . -maxdepth 1 -type f -print0 | while IFS= read -r -d '' f; do
+            b="${f#./}"
+            [ -e "$f" ] || continue
+            kind="$(file -b "$f")"
+            case "$kind" in
+              *DEX*) dest="dex/$b" ;;
+              *ELF*) dest="lib/$b" ;;
+              *XML*|*xml*) dest="resources/xml/$b" ;;
+              *PNG*|*JPEG*|*GIF*|*WebP*|*SVG*) dest="media/$b" ;;
+              *Zip*|*Java*archive*|*gzip*|*XZ*) dest="archives/$b" ;;
+              *JSON*|*text*|*ASCII*) dest="config/$b" ;;
+              *) dest="unknown/$b" ;;
+            esac
+            move_file "$f" "$dest"
+          done
+
+          # Anything unexpectedly left in staging is retained under unknown.
+          find . -mindepth 1 -print0 | while IFS= read -r -d '' p; do
+            rel="${p#./}"
+            [ -e "$p" ] || continue
+            if [ -d "$p" ]; then
+              mkdir -p "$root/unknown/$rel"
+              cp -a "$p"/. "$root/unknown/$rel"/ 2>/dev/null || true
+            else
+              mkdir -p "$root/unknown/$(dirname "$rel")"
+              mv "$p" "$root/unknown/$rel"
+            fi
+          done
+
+          rm -rf "$GITHUB_WORKSPACE/reconstruction/_staging"
+
+      - name: Build organization manifest
+        run: |
+          set -e
+          root="reconstruction/apk_root"
+          a="reconstruction/analysis"
+          find "$root" -type f -print | sort > "$a/ORGANIZED_FILE_LIST.txt"
+          find "$root" -type f -print0 | sort -z | xargs -0 sha256sum > "$a/ORGANIZED_SHA256.txt"
+
+          {
+            echo "# Cerebillum Organized Reconstruction"
+            echo
+            echo "## Layout"
+            echo "- manifest/ — Android manifest"
+            echo "- dex/ — DEX bytecode"
+            echo "- resources/ — resources.arsc and XML/other resource files"
+            echo "- assets/ — application assets"
+            echo "- lib/ — native libraries and ELF binaries"
+            echo "- res/ — original Android res tree"
+            echo "- meta-inf/ — original META-INF tree"
+            echo "- media/ — image/media files"
+            echo "- config/ — JSON/config/text files"
+            echo "- archives/ — nested archives/APK/JAR/etc."
+            echo "- unknown/ — files whose type could not be safely classified"
+            echo
+            echo "## Counts"
+            printf "Total files: "; find "$root" -type f | wc -l
+            for d in manifest dex resources assets lib res meta-inf media config archives unknown; do
+              printf "%-10s " "$d:"
+              find "$root/$d" -type f 2>/dev/null | wc -l
+            done
+            echo
+            echo "## DEX"
+            find "$root/dex" -type f -print | sort
+            echo
+            echo "## Native libraries"
+            find "$root/lib" -type f -print | sort
+          } > "$a/ORGANIZATION_MANIFEST.md"
+
+      - name: Commit organized reconstruction
         run: |
           set -e
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add reconstruction
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m 'Extract Cerebillum reconstruction tree'
+          git commit -m 'Organize Cerebillum reconstruction tree'
           git push origin HEAD:main
