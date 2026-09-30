@@ -274,10 +274,21 @@ jobs:
         run: |
           set -e
           mkdir -p "$HOME/tools"
-          curl -L --fail --retry 3 -o "$HOME/tools/apktool.jar" https://github.com/iBotPeaches/Apktool/releases/latest/download/apktool.jar
-          curl -L --fail --retry 3 -o "$HOME/tools/jadx.zip" https://github.com/skylot/jadx/releases/latest/download/jadx-1.5.2.zip
-          unzip -q "$HOME/tools/jadx.zip" -d "$HOME/tools/jadx"
-          chmod +x "$HOME/tools/jadx/bin/jadx"
+          case "${{ matrix.batch }}" in
+            manifest)
+              url="$(curl -fsSL https://api.github.com/repos/iBotPeaches/Apktool/releases/latest | jq -r '.assets[] | select(.name|endswith(".jar")) | .browser_download_url' | head -1)"
+              test -n "$url" && test "$url" != "null"
+              curl -L --fail --retry 3 -o "$HOME/tools/apktool.jar" "$url"
+              ;;
+            dex-symbols)
+              url="$(curl -fsSL https://api.github.com/repos/skylot/jadx/releases/latest | jq -r '.assets[] | select(.name|endswith(".zip")) | .browser_download_url' | head -1)"
+              test -n "$url" && test "$url" != "null"
+              curl -L --fail --retry 3 -o "$HOME/tools/jadx.zip" "$url"
+              unzip -q "$HOME/tools/jadx.zip" -d "$HOME/tools/jadx"
+              chmod +x "$HOME/tools/jadx/bin/jadx"
+              ;;
+            *) ;;
+          esac
       - name: Run deep batch
         run: |
           set -e
