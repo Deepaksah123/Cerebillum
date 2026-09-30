@@ -543,22 +543,15 @@ jobs:
           java -jar reconstruction/build/apktool.jar d \
             reconstruction/build/output/Cerebillum-reconstructed-unsigned.apk \
             -o reconstruction/build/decoded --force
-          python3 - <<'PY'
-from pathlib import Path
-p = Path("reconstruction/build/decoded/AndroidManifest.xml")
-s = p.read_text()
-s = s.replace('package="com.marrow"', 'package="com.marrow.reconstructed"', 1)
-s = s.replace('com.marrow.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION', 'com.marrow.reconstructed.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION')
-for old, new in [
-    ('com.marrow.fileprovider', 'com.marrow.reconstructed.fileprovider'),
-    ('com.marrow.data.provider', 'com.marrow.reconstructed.data.provider'),
-    ('com.marrow.clevertap.fileprovider', 'com.marrow.reconstructed.clevertap.fileprovider'),
-    ('com.marrow.FacebookInitProvider', 'com.marrow.reconstructed.FacebookInitProvider'),
-    ('com.marrow.firebaseinitprovider', 'com.marrow.reconstructed.firebaseinitprovider'),
-]:
-    s = s.replace(old, new)
-p.write_text(s)
-          PY
+          sed -i \\
+            -e 's/package="com.marrow"/package="com.marrow.reconstructed"/' \\
+            -e 's/com.marrow.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION/com.marrow.reconstructed.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION/g' \\
+            -e 's/com.marrow.fileprovider/com.marrow.reconstructed.fileprovider/g' \\
+            -e 's/com.marrow.data.provider/com.marrow.reconstructed.data.provider/g' \\
+            -e 's/com.marrow.clevertap.fileprovider/com.marrow.reconstructed.clevertap.fileprovider/g' \\
+            -e 's/com.marrow.FacebookInitProvider/com.marrow.reconstructed.FacebookInitProvider/g' \\
+            -e 's/com.marrow.firebaseinitprovider/com.marrow.reconstructed.firebaseinitprovider/g' \\
+            reconstruction/build/decoded/AndroidManifest.xml
           java -jar reconstruction/build/apktool.jar b reconstruction/build/decoded \
             -o reconstruction/build/rebuilt/Cerebillum-reconstructed-coexist-unsigned.apk
           test -s reconstruction/build/rebuilt/Cerebillum-reconstructed-coexist-unsigned.apk
