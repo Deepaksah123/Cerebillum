@@ -1,98 +1,103 @@
-name: Extract Cerebillum APK reconstruction parts
+name: Cerebillum Reconstruction Extract
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    paths:
+      - '01_core_dex.zip'
+      - '02_dex_3_4.zip'
+      - '03_dex5_lib_assets.zip'
+      - '04_remaining_resources.zip'
+      - '.github/workflows/extract-reconstruction.yml'
 
 permissions:
   contents: write
 
 jobs:
   extract:
+    name: Extract and validate Cerebillum parts
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Cerebillum
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          persist-credentials: true
+          fetch-depth: 1
 
-      - name: Verify all four source ZIPs
+      - name: Verify source ZIPs
         shell: bash
         run: |
           set -euo pipefail
           for z in 01_core_dex.zip 02_dex_3_4.zip 03_dex5_lib_assets.zip 04_remaining_resources.zip; do
+            echo "Checking $z"
             test -s "$z"
             unzip -tqq "$z"
           done
 
-      - name: Extract without flattening
+      - name: Prepare reconstruction workspace
         shell: bash
         run: |
           set -euo pipefail
           rm -rf reconstruction/apk_root reconstruction/analysis
           mkdir -p reconstruction/apk_root reconstruction/analysis
+
+      - name: Extract all four parts
+        shell: bash
+        run: |
+          set -euo pipefail
           for z in 01_core_dex.zip 02_dex_3_4.zip 03_dex5_lib_assets.zip 04_remaining_resources.zip; do
+            echo "Extracting $z"
             unzip -q -o "$z" -d reconstruction/apk_root
           done
 
-      - name: Validate and build inventory
+      - name: Build reconstruction inventory
         shell: bash
         run: |
           set -euo pipefail
           find reconstruction/apk_root -type f -print | LC_ALL=C sort > reconstruction/analysis/EXTRACTED_FILE_LIST.txt
-          find reconstruction/apk_root -type f -print0 | xargs -0 sha256sum > reconstruction/analysis/EXTRACTED_SHA256.txt
-          {
-            echo "# Cerebillum APK Reconstruction Import"
-            echo
-            echo "Source: four ZIP parts stored at repository root."
-            echo "Extraction preserves the paths contained inside each ZIP."
-            echo
-            echo "## File count"
-            find reconstruction/apk_root -type f | wc -l
-            echo
-            echo "## Top-level directories"
-            find reconstruction/apk_root -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | LC_ALL=C sort
-            echo
-            echo "## DEX files"
-            find reconstruction/apk_root -maxdepth 1 -type f -name '*.dex' -printf '%f\n' | LC_ALL=C sort
-            echo
-            echo "## Package indicators"
-            grep -RaoE 'com\.[A-Za-z0-9_$.]+' reconstruction/apk_root 2>/dev/null | LC_ALL=C sort -u | head -200 || true
-          } > reconstruction/analysis/IMPORT_MANIFEST.md
+          find reconstruction/apk_root -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > reconstruction/analysis/EXTRACTED_SHA256.txt
+          echo '# Cerebillum Reconstruction Manifest' > reconstruction/analysis/IMPORT_MANIFEST.md
+          echo >> reconstruction/analysis/IMPORT_MANIFEST.md
+          echo 'Generated from the four source ZIP parts at repository root.' >> reconstruction/analysis/IMPORT_MANIFEST.md
+          echo >> reconstruction/analysis/IMPORT_MANIFEST.md
+          echo '## Extracted file count' >> reconstruction/analysis/IMPORT_MANIFEST.md
+          find reconstruction/apk_root -type f | wc -l >> reconstruction/analysis/IMPORT_MANIFEST.md
+          echo >> reconstruction/analysis/IMPORT_MANIFEST.md
+          echo '## Extracted directory count' >> reconstruction/analysis/IMPORT_MANIFEST.md
+          find reconstruction/apk_root -type d | wc -l >> reconstruction/analysis/IMPORT_MANIFEST.md
+          echo >> reconstruction/analysis/IMPORT_MANIFEST.md
+          echo '## DEX files' >> reconstruction/analysis/IMPORT_MANIFEST.md
+          find reconstruction/apk_root -type f -name '*.dex' -print | LC_ALL=C sort >> reconstruction/analysis/IMPORT_MANIFEST.md || true
 
       - name: Write reconstruction README
         shell: bash
         run: |
           cat > reconstruction/README.md <<'EOF'
-# Cerebillum APK Reconstruction Workspace
+# Cerebillum APK Reconstruction
 
-This workspace is generated only from the four ZIP parts in this repository.
+This is the reconstruction workspace for the four Cerebillum ZIP parts stored at repository root.
 
-## Structure
+Source ZIPs:
+- 01_core_dex.zip
+- 02_dex_3_4.zip
+- 03_dex5_lib_assets.zip
+- 04_remaining_resources.zip
 
-- apk_root/ — extracted APK tree, with paths preserved exactly
-- analysis/EXTRACTED_FILE_LIST.txt — complete file inventory
-- analysis/EXTRACTED_SHA256.txt — SHA-256 for every extracted file
-- analysis/IMPORT_MANIFEST.md — import and validation report
+Generated structure:
+- apk_root/ — extracted APK filesystem tree
+- analysis/EXTRACTED_FILE_LIST.txt — complete extracted-file inventory
+- analysis/EXTRACTED_SHA256.txt — SHA-256 inventory
+- analysis/IMPORT_MANIFEST.md — extraction/validation manifest
 
-The APK root is kept intact so DEX, native libraries, assets, resources, and metadata remain in their original relative locations.
-
-This is the extraction/reconstruction stage. DEX bytecode is not claimed to be Java/Kotlin source until an actual decompiler stage is run.
+The source ZIP files are not modified.
 EOF
 
-      - name: Commit extracted reconstruction
+      - name: Commit reconstruction tree
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add reconstruction
-          if git diff --cached --quiet; then
-            echo "No reconstruction changes to commit."
-            exit 0
-          fi
-          git commit -m "Extract Cerebillum APK reconstruction tree"
+          git diff --cached --quiet && echo "No reconstruction changes." && exit 0
+          git commit -m "Build Cerebillum reconstruction workspace"
           git push origin HEAD:main
