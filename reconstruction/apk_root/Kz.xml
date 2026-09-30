@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="utf-8"?><resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@string/nfc_instructions,@string/no_card_detected,@string/nfc_status,@string/nfc_card_detail,@string/scan_successful,@string/loader_screen,@string/scan_failed" />
