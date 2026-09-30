@@ -558,7 +558,7 @@ for old, new in [
 ]:
     s = s.replace(old, new)
 p.write_text(s)
-PY
+          PY
           java -jar reconstruction/build/apktool.jar b reconstruction/build/decoded \
             -o reconstruction/build/rebuilt/Cerebillum-reconstructed-coexist-unsigned.apk
           test -s reconstruction/build/rebuilt/Cerebillum-reconstructed-coexist-unsigned.apk
