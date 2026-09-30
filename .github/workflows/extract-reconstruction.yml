@@ -493,3 +493,79 @@ jobs:
           if git diff --cached --quiet; then exit 0; fi
           git commit -m 'Run autonomous Cerebillum pipeline controller'
           git push origin HEAD:main
+
+
+  autonomous-build:
+    needs: autonomous-controller
+    if: ${{ needs.autonomous-controller.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Reconstruct original APK tree
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf reconstruction/build/apk-tree reconstruction/build/output
+          mkdir -p reconstruction/build/apk-tree reconstruction/build/output
+          for z in 01_core_dex.zip 02_dex_3_4.zip 03_dex5_lib_assets.zip 04_remaining_resources.zip; do
+            test -s "$z"
+            unzip -q -o "$z" -d reconstruction/build/apk-tree
+          done
+          test -f reconstruction/build/apk-tree/AndroidManifest.xml
+          test -f reconstruction/build/apk-tree/resources.arsc
+          ls reconstruction/build/apk-tree/classes*.dex >/dev/null
+          unzip -tqq 01_core_dex.zip
+          unzip -tqq 02_dex_3_4.zip
+          unzip -tqq 03_dex5_lib_assets.zip
+          unzip -tqq 04_remaining_resources.zip
+
+      - name: Repack APK
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd reconstruction/build/apk-tree
+          rm -f META-INF/*.SF META-INF/*.RSA META-INF/*.DSA META-INF/MANIFEST.MF 2>/dev/null || true
+          zip -q -r -X ../output/Cerebillum-reconstructed-unsigned.apk .
+          unzip -tqq ../output/Cerebillum-reconstructed-unsigned.apk
+
+      - name: Align and sign APK
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BUILD_TOOLS="$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)"
+          test -x "$BUILD_TOOLS/zipalign"
+          test -x "$BUILD_TOOLS/apksigner"
+          keytool -genkeypair -v -keystore reconstruction/build/cerebillum-debug.keystore             -alias cerebillum -keyalg RSA -keysize 2048 -validity 10000             -storepass android -keypass android             -dname "CN=Cerebillum Reconstruction,O=OpenAI Reconstruction,C=US"
+          "$BUILD_TOOLS/zipalign" -f -p 4             reconstruction/build/output/Cerebillum-reconstructed-unsigned.apk             reconstruction/build/output/Cerebillum-reconstructed-aligned.apk
+          "$BUILD_TOOLS/apksigner" sign             --ks reconstruction/build/cerebillum-debug.keystore             --ks-pass pass:android             --key-pass pass:android             --out reconstruction/build/output/Cerebillum-reconstructed.apk             reconstruction/build/output/Cerebillum-reconstructed-aligned.apk
+          "$BUILD_TOOLS/apksigner" verify --verbose reconstruction/build/output/Cerebillum-reconstructed.apk
+
+      - name: Runtime APK validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          apk="reconstruction/build/output/Cerebillum-reconstructed.apk"
+          test -s "$apk"
+          unzip -tqq "$apk"
+          BUILD_TOOLS="$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)"
+          if [ -x "$BUILD_TOOLS/aapt" ]; then
+            "$BUILD_TOOLS/aapt" dump badging "$apk" > reconstruction/validation/apk-badging.txt
+            grep -E '^package:|^application-label:|^launchable-activity:' reconstruction/validation/apk-badging.txt || true
+          fi
+          sha256sum "$apk" | tee reconstruction/validation/Cerebillum-reconstructed.sha256
+          stat -c 'APK size: %s bytes' "$apk" | tee reconstruction/validation/APK_SIZE.txt
+
+      - name: Upload reconstructed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Cerebillum-reconstructed-APK
+          path: |
+            reconstruction/build/output/Cerebillum-reconstructed.apk
+            reconstruction/validation/apk-badging.txt
+            reconstruction/validation/Cerebillum-reconstructed.sha256
+            reconstruction/validation/APK_SIZE.txt
