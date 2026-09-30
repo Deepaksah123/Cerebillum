@@ -533,6 +533,36 @@ jobs:
           zip -q -r -X ../output/Cerebillum-reconstructed-unsigned.apk .
           unzip -tqq ../output/Cerebillum-reconstructed-unsigned.apk
 
+      - name: Make reconstructed APK coexist with original
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p reconstruction/build/decoded reconstruction/build/rebuilt
+          curl -L --fail --retry 3 -o reconstruction/build/apktool.jar \
+            "$(curl -fsSL https://api.github.com/repos/iBotPeaches/Apktool/releases/latest | jq -r '.assets[] | select(.name|endswith(".jar")) | .browser_download_url' | head -1)"
+          java -jar reconstruction/build/apktool.jar d \
+            reconstruction/build/output/Cerebillum-reconstructed-unsigned.apk \
+            -o reconstruction/build/decoded --force
+          python3 - <<'PY'
+from pathlib import Path
+p = Path("reconstruction/build/decoded/AndroidManifest.xml")
+s = p.read_text()
+s = s.replace('package="com.marrow"', 'package="com.marrow.reconstructed"', 1)
+s = s.replace('com.marrow.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION', 'com.marrow.reconstructed.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION')
+for old, new in [
+    ('com.marrow.fileprovider', 'com.marrow.reconstructed.fileprovider'),
+    ('com.marrow.data.provider', 'com.marrow.reconstructed.data.provider'),
+    ('com.marrow.clevertap.fileprovider', 'com.marrow.reconstructed.clevertap.fileprovider'),
+    ('com.marrow.FacebookInitProvider', 'com.marrow.reconstructed.FacebookInitProvider'),
+    ('com.marrow.firebaseinitprovider', 'com.marrow.reconstructed.firebaseinitprovider'),
+]:
+    s = s.replace(old, new)
+p.write_text(s)
+PY
+          java -jar reconstruction/build/apktool.jar b reconstruction/build/decoded \
+            -o reconstruction/build/rebuilt/Cerebillum-reconstructed-coexist-unsigned.apk
+          test -s reconstruction/build/rebuilt/Cerebillum-reconstructed-coexist-unsigned.apk
+
       - name: Align and sign APK
         shell: bash
         run: |
@@ -541,7 +571,7 @@ jobs:
           test -x "$BUILD_TOOLS/zipalign"
           test -x "$BUILD_TOOLS/apksigner"
           keytool -genkeypair -v -keystore reconstruction/build/cerebillum-debug.keystore             -alias cerebillum -keyalg RSA -keysize 2048 -validity 10000             -storepass android -keypass android             -dname "CN=Cerebillum Reconstruction,O=OpenAI Reconstruction,C=US"
-          "$BUILD_TOOLS/zipalign" -f -p 4             reconstruction/build/output/Cerebillum-reconstructed-unsigned.apk             reconstruction/build/output/Cerebillum-reconstructed-aligned.apk
+          "$BUILD_TOOLS/zipalign" -f -p 4             reconstruction/build/rebuilt/Cerebillum-reconstructed-coexist-unsigned.apk             reconstruction/build/output/Cerebillum-reconstructed-aligned.apk
           "$BUILD_TOOLS/apksigner" sign             --ks reconstruction/build/cerebillum-debug.keystore             --ks-pass pass:android             --key-pass pass:android             --out reconstruction/build/output/Cerebillum-reconstructed.apk             reconstruction/build/output/Cerebillum-reconstructed-aligned.apk
           "$BUILD_TOOLS/apksigner" verify --verbose reconstruction/build/output/Cerebillum-reconstructed.apk
 
