@@ -550,6 +550,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           apk="reconstruction/build/output/Cerebillum-reconstructed.apk"
+          mkdir -p reconstruction/validation
           test -s "$apk"
           unzip -tqq "$apk"
           BUILD_TOOLS="$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)"
