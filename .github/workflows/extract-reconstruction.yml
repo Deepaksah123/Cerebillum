@@ -257,3 +257,121 @@ jobs:
           if git diff --cached --quiet; then exit 0; fi
           git commit -m 'Add parallel Cerebillum reconstruction analysis'
           git push origin HEAD:main
+
+  deep-analysis:
+    needs: aggregate-analysis
+    strategy:
+      fail-fast: false
+      matrix:
+        batch: [manifest, dex-symbols, native-elf, media-types, unknown-types]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Install analysis tools
+        run: |
+          set -e
+          mkdir -p "$HOME/tools"
+          curl -L --fail --retry 3 -o "$HOME/tools/apktool.jar" https://github.com/iBotPeaches/Apktool/releases/latest/download/apktool.jar
+          curl -L --fail --retry 3 -o "$HOME/tools/jadx.zip" https://github.com/skylot/jadx/releases/latest/download/jadx-1.5.2.zip
+          unzip -q "$HOME/tools/jadx.zip" -d "$HOME/tools/jadx"
+          chmod +x "$HOME/tools/jadx/bin/jadx"
+      - name: Run deep batch
+        run: |
+          set -e
+          root="reconstruction/apk_root"
+          out="reconstruction/analysis/deep"
+          mkdir -p "$out"
+          case "${{ matrix.batch }}" in
+            manifest)
+              mkdir -p /tmp/cerebillum-apk
+              cp -a "$root"/. /tmp/cerebillum-apk/
+              (cd /tmp/cerebillum-apk && zip -q -r /tmp/cerebillum.apk .)
+              java -jar "$HOME/tools/apktool.jar" d /tmp/cerebillum.apk -o /tmp/cerebillum-decoded --force >/tmp/apktool.log 2>&1 || { cat /tmp/apktool.log; exit 1; }
+              {
+                echo "# Manifest Deep Analysis"
+                echo
+                echo "## Decoded AndroidManifest.xml"
+                cat /tmp/cerebillum-decoded/AndroidManifest.xml
+                echo
+                echo "## Apktool log"
+                cat /tmp/apktool.log
+                echo
+                echo "## Resource directory counts"
+                find /tmp/cerebillum-decoded/res -type f 2>/dev/null | wc -l
+              } > "$out/manifest.md"
+              ;;
+            dex-symbols)
+              {
+                echo "# DEX Deep Analysis"
+                for f in "$root"/dex/*.dex; do
+                  echo
+                  echo "## $(basename "$f")"
+                  echo "Size: $(stat -c '%s' "$f") bytes"
+                  echo "SHA256: $(sha256sum "$f" | cut -d' ' -f1)"
+                  mkdir -p /tmp/jadx/$(basename "$f" .dex)
+                  "$HOME/tools/jadx/bin/jadx" --no-res --no-imports --show-bad-code -d /tmp/jadx/$(basename "$f" .dex) "$f" >/tmp/jadx.log 2>&1 || true
+                  find /tmp/jadx/$(basename "$f" .dex) -type f -name '*.java' | wc -l | awk '{print "Decompiled Java files: "$1}'
+                  find /tmp/jadx/$(basename "$f" .dex) -type f -name '*.java' -print | sed 's#.*/src/##' | head -200
+                done
+              } > "$out/dex-symbols.md"
+              ;;
+            native-elf)
+              {
+                echo "# Native ELF Deep Analysis"
+                find "$root/lib" -type f -name '*.so' -print0 | while IFS= read -r -d '' f; do
+                  echo
+                  echo "## $f"
+                  file "$f"
+                  readelf -h "$f" 2>/dev/null | grep -E 'Class:|Machine:|Type:|Entry point:' || true
+                  readelf -d "$f" 2>/dev/null | grep -E 'SONAME|NEEDED' || true
+                  echo "SHA256: $(sha256sum "$f" | cut -d' ' -f1)"
+                done
+              } > "$out/native-elf.md"
+              ;;
+            media-types)
+              {
+                echo "# Media Type Deep Analysis"
+                find "$root/media" "$root/assets" -type f -print0 | while IFS= read -r -d '' f; do
+                  printf '%s\t%s\n' "$(file -b "$f")" "$f"
+                done | sort
+              } > "$out/media-types.md"
+              ;;
+            unknown-types)
+              {
+                echo "# Unknown Type Deep Analysis"
+                find "$root/unknown" -type f -print0 | while IFS= read -r -d '' f; do
+                  printf '%s\t%s\n' "$(file -b "$f")" "$f"
+                done | sort
+              } > "$out/unknown-types.md"
+              ;;
+          esac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cerebillum-deep-${{ matrix.batch }}
+          path: reconstruction/analysis/deep/${{ matrix.batch }}.md
+
+  aggregate-deep-analysis:
+    needs: deep-analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cerebillum-deep-*
+          path: reconstruction/analysis/deep
+          merge-multiple: true
+      - name: Commit deep analysis
+        run: |
+          set -e
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add reconstruction/analysis/deep
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Add deep Cerebillum reconstruction analysis'
+          git push origin HEAD:main
