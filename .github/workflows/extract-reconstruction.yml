@@ -301,9 +301,18 @@ jobs:
           mkdir -p "$out"
           case "${{ matrix.batch }}" in
             manifest)
+              rm -rf /tmp/cerebillum-apk /tmp/cerebillum-decoded
               mkdir -p /tmp/cerebillum-apk
-              cp -a "$root"/. /tmp/cerebillum-apk/
+              # Reconstruct a valid APK top-level layout from the organized tree.
+              cp "$root/manifest/AndroidManifest.xml" /tmp/cerebillum-apk/AndroidManifest.xml
+              cp "$root/resources/resources.arsc" /tmp/cerebillum-apk/resources.arsc
+              cp -a "$root/dex"/. /tmp/cerebillum-apk/ 2>/dev/null || true
+              cp -a "$root/assets" /tmp/cerebillum-apk/ 2>/dev/null || true
+              cp -a "$root/lib" /tmp/cerebillum-apk/ 2>/dev/null || true
+              cp -a "$root/res" /tmp/cerebillum-apk/ 2>/dev/null || true
+              cp -a "$root/meta-inf" /tmp/cerebillum-apk/META-INF 2>/dev/null || true
               (cd /tmp/cerebillum-apk && zip -q -r /tmp/cerebillum.apk .)
+              unzip -tqq /tmp/cerebillum.apk
               java -jar "$HOME/tools/apktool.jar" d /tmp/cerebillum.apk -o /tmp/cerebillum-decoded --force >/tmp/apktool.log 2>&1 || { cat /tmp/apktool.log; exit 1; }
               {
                 echo "# Manifest Deep Analysis"
