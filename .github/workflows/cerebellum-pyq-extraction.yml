@@ -88,9 +88,9 @@ jobs:
               if st=='UNRESOLVED':
                   unresolved.setdefault(year,[]).append(r)
                   continue
-              sid=r.get('canonical_subject_id') or r.get('mapped_subject_id')
-              if sid not in subject_names: continue
-              subj=subject_names[sid]
+              cands=r.get('subject_candidates') or []
+              if len(cands)!=1 or cands[0] not in subject_names.values(): continue
+              subj=cands[0]
               index['mapped_records']+=1
               buckets.setdefault((subj,year),[]).append(r)
           index['unresolved_records']=sum(len(v) for v in unresolved.values())
