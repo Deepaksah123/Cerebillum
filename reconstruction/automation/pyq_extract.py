@@ -98,7 +98,7 @@ def video_subject_candidates(row):
     for u in urls:
         name=re.sub(r"[^a-z0-9]+"," ",u)
         for alias,subject in VIDEO_SUBJECT_ALIASES.items():
-            if re.search(rf"\\b{re.escape(alias)}\\b",name):
+            if re.search(rf"\b{re.escape(alias)}\b",name):
                 found.add(subject)
     return found
 
