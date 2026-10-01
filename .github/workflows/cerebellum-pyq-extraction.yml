@@ -1,0 +1,33 @@
+name: Cerebellum PYQ Automated Extraction
+
+on:
+  push:
+    branches: [cerebellum-pyq-phase1]
+  workflow_dispatch:
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clone source repository
+        run: git clone --depth 1 https://github.com/sunday2212/WEBREPLITX5.git source_repo
+      - name: Run automated PYQ extraction and mapping
+        run: python3 reconstruction/automation/pyq_extract.py
+      - name: Validate generated artifacts
+        run: |
+          test -s reconstruction/generated/pyq/pyq_records.json
+          test -s reconstruction/generated/pyq/pyq_year_summary.json
+          test -s reconstruction/generated/pyq/pyq_audit.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open('reconstruction/generated/pyq/pyq_audit.json'))
+          assert a['source_files'] == 41, a
+          assert a['questions'] > 0, a
+          print(json.dumps(a, indent=2))
+          PY
+      - name: Upload extraction artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cerebellum-pyq-extraction
+          path: reconstruction/generated/pyq/
