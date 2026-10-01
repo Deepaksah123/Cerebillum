@@ -213,7 +213,8 @@ jobs:
           s=p.read_text(encoding='utf-8')
           urls=[]
           seen=set()
-          for u in re.findall(r"<img\\b[^>]*?\\bsrc=[\"']([^\"']+)[\"']",s,re.I):
+          pattern = r'''<img\\b[^>]*?\\bsrc=["']([^"']+)["']'''
+          for u in re.findall(pattern,s,re.I):
               if u.startswith(('http://','https://')) and u not in seen:
                   seen.add(u); urls.append(u)
           cache={}
@@ -227,9 +228,9 @@ jobs:
           def repl(m):
               u=m.group(1)
               return m.group(0).replace(u,cache.get(u,u),1)
-          s=re.sub(r'<img\\b[^>]*?\\bsrc=["\\']([^"\\']+)["\\']',repl,s,flags=re.I)
+          s=re.sub(pattern,repl,s,flags=re.I)
           p.write_text(s,encoding='utf-8')
-          remaining=re.findall(r"<img\\b[^>]*?\\bsrc=[\"'](https?://[^\"']+)[\"']",s,re.I)
+          remaining=re.findall(r'''<img\\b[^>]*?\\bsrc=["'](https?://[^"']+)["']''',s,re.I)
           if remaining: raise SystemExit(f'Remote image URLs remain: {len(remaining)}')
           print('unique remote images embedded:',len(urls))
           PY
