@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, os, re, hashlib
+import json, os, re, hashlib, html
 from pathlib import Path
 from collections import defaultdict, Counter
 
@@ -12,6 +12,14 @@ OUT.mkdir(parents=True,exist_ok=True)
 
 def norm(s):
     s=re.sub(r"<[^>]+>"," ",str(s or ""))
+    s=re.sub(r"[^a-z0-9]+"," ",s.lower())
+    return re.sub(r"\s+"," ",s).strip()
+
+def norm_visible(s):
+    s=html.unescape(str(s or ""))
+    s=re.sub(r"<img\\b[^>]*>"," ",s,flags=re.I)
+    s=re.sub(r"<[^>]+>"," ",s)
+    s=re.sub(r"https?://\\S+"," ",s,flags=re.I)
     s=re.sub(r"[^a-z0-9]+"," ",s.lower())
     return re.sub(r"\s+"," ",s).strip()
 
@@ -31,6 +39,7 @@ qbank_unique_key_to_subject=defaultdict(set)
 qbank_map_id_to_subject=defaultdict(set)
 qbank_choice_id_to_subject=defaultdict(set)
 exact=defaultdict(set)
+exact_visible=defaultdict(set)
 
 for p in QB.rglob("*.json"):
     data=load_json(p)
@@ -57,6 +66,8 @@ for p in QB.rglob("*.json"):
                 if cid is not None: qbank_choice_id_to_subject[cid].add(subject)
         k=norm(row.get("question") or row.get("question_text") or row.get("text"))
         if k and len(k)>=20: exact[k].add(subject)
+        vk=norm_visible(row.get("question") or row.get("question_text") or row.get("text"))
+        if vk and len(vk)>=20: exact_visible[vk].add(subject)
 
 canonical_id_to_subject=defaultdict(list)
 for subject, counts in subject_id_counts_by_subject.items():
@@ -74,6 +85,7 @@ canonical_subject_by_id={sid:subs[0] for sid,subs in canonical_id_to_subject.ite
 # is required. Mere repetition in another test/module is never sufficient.
 cross_unique_key=defaultdict(set)
 cross_text=defaultdict(set)
+cross_visible_text=defaultdict(set)
 cross_evidence=defaultdict(list)
 for p in SRC.rglob("*.json"):
     if PYQ in p.parents or QB in p.parents: continue
@@ -98,6 +110,10 @@ for p in SRC.rglob("*.json"):
         if nk and len(nk)>=20:
             cross_text[nk].add(subject)
             cross_evidence[("text",nk)].append({"subject":subject,"file":rel})
+        vnk=norm_visible(row.get("question") or row.get("question_text") or row.get("text"))
+        if vnk and len(vnk)>=20:
+            cross_visible_text[vnk].add(subject)
+            cross_evidence[("visible_text",vnk)].append({"subject":subject,"file":rel})
 
 PYQ_FOLDER_ALIASES={
     "biochemistry":"Biochemistry","physiology":"Physiology","anatomy":"Anatomy",
@@ -119,6 +135,7 @@ def folder_subject(path):
 
 folder_unique_key=defaultdict(set)
 folder_text=defaultdict(set)
+folder_visible_text=defaultdict(set)
 for p in BRAIN.rglob("*.json"):
     rel=str(p.relative_to(BRAIN)).replace(os.sep,"/")
     subject=folder_subject(rel)
@@ -133,6 +150,8 @@ for p in BRAIN.rglob("*.json"):
         if uk: folder_unique_key[str(uk)].add(subject)
         nk=norm(row.get("question") or row.get("question_text") or row.get("text"))
         if nk and len(nk)>=20: folder_text[nk].add(subject)
+        vnk=norm_visible(row.get("question") or row.get("question_text") or row.get("text"))
+        if vnk and len(vnk)>=20: folder_visible_text[vnk].add(subject)
 
 VIDEO_SUBJECT_ALIASES={
     "biochemistry":"Biochemistry","physiology":"Physiology","anatomy":"Anatomy",
@@ -160,8 +179,8 @@ def video_subject_candidates(row):
 
 summary=defaultdict(lambda:{"files":0,"questions":0,"subject_id_mapped":0,"canonical_subject_id_mapped":0,
                             "qbank_id_mapped":0,"qbank_unique_key_mapped":0,"qbank_map_id_mapped":0,"qbank_choice_id_mapped":0,
-                            "video_subject_mapped":0,"cross_source_unique_key_mapped":0,"cross_source_text_mapped":0,
-                            "folder_pyq_unique_key_mapped":0,"folder_pyq_text_mapped":0,"exact_mapped":0,"subject_mapped":0,"unresolved":0,"ambiguous":0})
+                            "video_subject_mapped":0,"cross_source_unique_key_mapped":0,"cross_source_text_mapped":0,"cross_source_visible_text_mapped":0,
+                            "folder_pyq_unique_key_mapped":0,"folder_pyq_text_mapped":0,"folder_pyq_visible_text_mapped":0,"exact_mapped":0,"exact_visible_mapped":0,"subject_mapped":0,"unresolved":0,"ambiguous":0})
 records=[]
 
 for p in sorted(PYQ.rglob("*.json")):
@@ -265,7 +284,19 @@ for p in sorted(PYQ.rglob("*.json")):
                                     status="AMBIGUOUS_CROSS_SOURCE_TEXT"
                                     evidence="exact normalized question text matched multiple explicit canonical subjects"
                                 else:
-                                    folder_uk_cands=folder_unique_key.get(str(row.get("unique_key")),set()) if row.get("unique_key") else set()
+                                    vnk=norm_visible(q)
+                                    visible_text_cands=cross_visible_text.get(vnk,set())
+                                    if len(visible_text_cands)==1:
+                                        subjects=sorted(visible_text_cands)
+                                        status="MAPPED_CROSS_SOURCE_VISIBLE_TEXT_METADATA"
+                                        evidence="exact visible question text -> non-PYQ/non-qBank source with explicit canonical subjects_id"
+                                        summary[year]["cross_source_visible_text_mapped"]+=1
+                                    elif len(visible_text_cands)>1:
+                                        subjects=[]
+                                        status="AMBIGUOUS_CROSS_SOURCE_VISIBLE_TEXT"
+                                        evidence="exact visible question text matched multiple explicit canonical subjects"
+                                    else:
+                                        folder_uk_cands=folder_unique_key.get(str(row.get("unique_key")),set()) if row.get("unique_key") else set()
                                     folder_text_cands=folder_text.get(nk,set())
                                     if len(folder_uk_cands)==1:
                                         subjects=sorted(folder_uk_cands)
@@ -286,7 +317,24 @@ for p in sorted(PYQ.rglob("*.json")):
                                         status="AMBIGUOUS_SUBJECT_FOLDER_PYQ_TEXT"
                                         evidence="exact normalized question text matched multiple subject-labeled DocTutorial/PYQ folders"
                                     else:
-                                        subjects=sorted(exact.get(nk,set()))
+                                        visible_folder_text_cands=folder_visible_text.get(vnk,set())
+                                        if len(visible_folder_text_cands)==1:
+                                            subjects=sorted(visible_folder_text_cands)
+                                            status="MAPPED_SUBJECT_FOLDER_PYQ_VISIBLE_TEXT"
+                                            evidence="exact visible question text -> unique subject-labeled DocTutorial/PYQ folder"
+                                            summary[year]["folder_pyq_visible_text_mapped"]+=1
+                                        elif len(visible_folder_text_cands)>1:
+                                            subjects=[]
+                                            status="AMBIGUOUS_SUBJECT_FOLDER_PYQ_VISIBLE_TEXT"
+                                            evidence="exact visible question text matched multiple subject-labeled DocTutorial/PYQ folders"
+                                        else:
+                                            subjects=sorted(exact.get(nk,set()))
+                                            if not subjects:
+                                                subjects=sorted(exact_visible.get(vnk,set()))
+                                                if len(subjects)==1:
+                                                    status="MAPPED_EXACT_VISIBLE"
+                                                    evidence="unique exact visible question text -> qBank subject"
+                                                    summary[year]["exact_visible_mapped"]+=1
                                     if len(subjects)==1:
                                         status="MAPPED_EXACT"
                                         evidence="unique exact normalized question text -> qBank subject"
@@ -333,16 +381,21 @@ audit={
     "mapped_video_subject_metadata":sum(v["video_subject_mapped"] for v in summary.values()),
     "mapped_cross_source_unique_key_metadata":sum(v["cross_source_unique_key_mapped"] for v in summary.values()),
     "mapped_cross_source_text_metadata":sum(v["cross_source_text_mapped"] for v in summary.values()),
+    "mapped_cross_source_visible_text_metadata":sum(v["cross_source_visible_text_mapped"] for v in summary.values()),
     "mapped_subject_folder_pyq_unique_key":sum(v["folder_pyq_unique_key_mapped"] for v in summary.values()),
     "mapped_subject_folder_pyq_text":sum(v["folder_pyq_text_mapped"] for v in summary.values()),
+    "mapped_subject_folder_pyq_visible_text":sum(v["folder_pyq_visible_text_mapped"] for v in summary.values()),
     "mapped_exact":sum(v["exact_mapped"] for v in summary.values()),
+    "mapped_exact_visible":sum(v["exact_visible_mapped"] for v in summary.values()),
     "mapped_total":sum(v["subject_mapped"] for v in summary.values()),
     "ambiguous_exact":sum(v["ambiguous"] for v in summary.values()),
     "unresolved":sum(v["unresolved"] for v in summary.values()),
     "cross_source_unique_key_index_entries":len(cross_unique_key),
     "cross_source_text_index_entries":len(cross_text),
+    "cross_source_visible_text_index_entries":len(cross_visible_text),
     "subject_folder_pyq_unique_key_index_entries":len(folder_unique_key),
     "subject_folder_pyq_text_index_entries":len(folder_text),
+    "subject_folder_pyq_visible_text_index_entries":len(folder_visible_text),
     "canonical_subject_count":len(canonical_subject_by_id),
     "canonical_subject_by_id":{str(k):v for k,v in sorted(canonical_subject_by_id.items())},
     "policy":"Explicit source subjects_id first; exact qBank id/unique_key/map_id/choice-id next; then exact unique_key or exact normalized question text against non-PYQ/non-qBank records carrying explicit canonical subjects_id; then exact unique_key/text against a subject-labeled DocTutorial/PYQ folder; then unique exact qBank text. Never infer subject from content or mere duplication across tests/modules."
