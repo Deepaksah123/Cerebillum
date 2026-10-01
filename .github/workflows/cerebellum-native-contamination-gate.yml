@@ -1,0 +1,35 @@
+name: Cerebellum Native Contamination Gate
+
+on:
+  push:
+    branches: [cerebellum-pyq-phase1]
+    paths:
+      - 'reconstruction/apk_root/**'
+      - 'reconstruction/analysis/cerebellum_native_contamination_gate_2026-10-01.json'
+      - '.github/workflows/cerebellum-native-contamination-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enforce Cerebellum-only native identity
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, sys
+          p=pathlib.Path('reconstruction/analysis/cerebellum_native_contamination_gate_2026-10-01.json')
+          d=json.loads(p.read_text())
+          observed=d['recovered_native_layer']['observed_package']
+          expected=d['verified_external_identity']['official_google_play_package']
+          if observed != expected:
+              print('NATIVE CONTAMINATION GATE: BLOCKED')
+              print(f'observed recovered package: {observed}')
+              print(f'expected Cerebellum package identity: {expected}')
+              print('No Cerebellum content may be injected into this native layer.')
+              sys.exit(1)
+          print('NATIVE CONTAMINATION GATE: PASS')
+          PY
