@@ -157,53 +157,53 @@ for p in sorted(PYQ.rglob("*.json")):
                 summary[year]["video_subject_mapped"]+=1
             else:
                 qid_candidates=qbank_id_to_subject.get(source_id_int,set()) if source_id_int is not None else set()
-            if len(qid_candidates)==1:
-                subjects=sorted(qid_candidates)
-                status="MAPPED_QBANK_ID"
-                evidence="source.id -> qBank.id exact match"
-                summary[year]["qbank_id_mapped"]+=1
-            else:
-                uk_candidates=qbank_unique_key_to_subject.get(str(row.get("unique_key")),set()) if row.get("unique_key") else set()
-                if len(uk_candidates)==1:
-                    subjects=sorted(uk_candidates)
-                    status="MAPPED_QBANK_UNIQUE_KEY"
-                    evidence="source.unique_key -> qBank.unique_key exact match"
-                    summary[year]["qbank_unique_key_mapped"]+=1
+                if len(qid_candidates)==1:
+                    subjects=sorted(qid_candidates)
+                    status="MAPPED_QBANK_ID"
+                    evidence="source.id -> qBank.id exact match"
+                    summary[year]["qbank_id_mapped"]+=1
                 else:
-                    mid=to_int(row.get("map_id"))
-                    mid_candidates=qbank_map_id_to_subject.get(mid,set()) if mid is not None else set()
-                    if len(mid_candidates)==1:
-                        subjects=sorted(mid_candidates)
-                        status="MAPPED_QBANK_MAP_ID"
-                        evidence="source.map_id -> qBank.map_id exact match"
-                        summary[year]["qbank_map_id_mapped"]+=1
+                    uk_candidates=qbank_unique_key_to_subject.get(str(row.get("unique_key")),set()) if row.get("unique_key") else set()
+                    if len(uk_candidates)==1:
+                        subjects=sorted(uk_candidates)
+                        status="MAPPED_QBANK_UNIQUE_KEY"
+                        evidence="source.unique_key -> qBank.unique_key exact match"
+                        summary[year]["qbank_unique_key_mapped"]+=1
                     else:
-                        choice_subjects=set()
-                        for choice in row.get("choices") or []:
-                            if isinstance(choice,dict):
-                                cid=to_int(choice.get("id"))
-                                if cid is not None: choice_subjects.update(qbank_choice_id_to_subject.get(cid,set()))
-                        correct_cid=to_int(row.get("correct_choice_id"))
-                        correct_subjects=qbank_choice_id_to_subject.get(correct_cid,set()) if correct_cid is not None else set()
-                        if len(choice_subjects)==1 and (not correct_subjects or correct_subjects==choice_subjects):
-                            subjects=sorted(choice_subjects)
-                            status="MAPPED_QBANK_CHOICE_ID"
-                            evidence="source.choices[].id -> qBank.choices[].id exact subject linkage"
-                            summary[year]["qbank_choice_id_mapped"]+=1
+                        mid=to_int(row.get("map_id"))
+                        mid_candidates=qbank_map_id_to_subject.get(mid,set()) if mid is not None else set()
+                        if len(mid_candidates)==1:
+                            subjects=sorted(mid_candidates)
+                            status="MAPPED_QBANK_MAP_ID"
+                            evidence="source.map_id -> qBank.map_id exact match"
+                            summary[year]["qbank_map_id_mapped"]+=1
                         else:
-                            subjects=sorted(exact.get(norm(q),set()))
-                        if len(subjects)==1:
-                            status="MAPPED_EXACT"
-                            evidence="unique exact normalized question text -> qBank subject"
-                            summary[year]["exact_mapped"]+=1
-                        elif len(subjects)>1:
-                            subjects=[]
-                            status="AMBIGUOUS_EXACT"
-                            evidence="multiple qBank subjects matched exact text"
-                        else:
-                            subjects=[]
-                            status="UNRESOLVED"
-                            evidence="no source-derived unique mapping"
+                            choice_subjects=set()
+                            for choice in row.get("choices") or []:
+                                if isinstance(choice,dict):
+                                    cid=to_int(choice.get("id"))
+                                    if cid is not None: choice_subjects.update(qbank_choice_id_to_subject.get(cid,set()))
+                            correct_cid=to_int(row.get("correct_choice_id"))
+                            correct_subjects=qbank_choice_id_to_subject.get(correct_cid,set()) if correct_cid is not None else set()
+                            if len(choice_subjects)==1 and (not correct_subjects or correct_subjects==choice_subjects):
+                                subjects=sorted(choice_subjects)
+                                status="MAPPED_QBANK_CHOICE_ID"
+                                evidence="source.choices[].id -> qBank.choices[].id exact subject linkage"
+                                summary[year]["qbank_choice_id_mapped"]+=1
+                            else:
+                                subjects=sorted(exact.get(norm(q),set()))
+                                if len(subjects)==1:
+                                    status="MAPPED_EXACT"
+                                    evidence="unique exact normalized question text -> qBank subject"
+                                    summary[year]["exact_mapped"]+=1
+                                elif len(subjects)>1:
+                                    subjects=[]
+                                    status="AMBIGUOUS_EXACT"
+                                    evidence="multiple qBank subjects matched exact text"
+                                else:
+                                    subjects=[]
+                                    status="UNRESOLVED"
+                                    evidence="no source-derived unique mapping"
 
         if status.startswith("MAPPED_"):
             summary[year]["subject_mapped"]+=1
