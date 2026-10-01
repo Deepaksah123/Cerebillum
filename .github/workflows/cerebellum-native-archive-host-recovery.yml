@@ -1,0 +1,32 @@
+name: Cerebellum Native Archive Host Recovery
+
+on:
+  push:
+    branches: [cerebellum-pyq-phase1]
+    paths:
+      - '01_core_dex.zip'
+      - '02_dex_3_4.zip'
+      - '03_dex5_lib_assets.zip'
+      - '04_remaining_resources.zip'
+      - 'reconstruction/automation/cerebellum_archive_native_recovery.py'
+      - '.github/workflows/cerebellum-native-archive-host-recovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover only verified Cerebellum-native evidence
+        run: |
+          python3 reconstruction/automation/cerebellum_archive_native_recovery.py
+      - name: Persist verified recovery
+        run: |
+          git config user.name "cerebellum-native-recovery-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reconstruction/cerebellum_native_verified reconstruction/analysis/cerebellum_archive_native_recovery.json
+          git diff --cached --quiet || git commit -m "Recover verified Cerebellum native evidence from archive chunks"
+          git push
