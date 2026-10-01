@@ -123,19 +123,20 @@ jobs:
                   index['mapped']+=1
                   subj=cands[0]; index['subjects'][subj]=index['subjects'].get(subj,0)+1
               else: index['unresolved']+=1
-              choices=r.get('choices') or []
+              src=r.get('source_record') or {}
+              choices=src.get('choices') or []
               n=len(choices); index['validation']['choice_count_distribution'][str(n)]=index['validation']['choice_count_distribution'].get(str(n),0)+1
               ids={str(x.get('id')) for x in choices if isinstance(x,dict) and x.get('id') is not None}
-              cid=str(r.get('correct_choice_id'))
+              cid=str(src.get('correct_choice_id'))
               if cid not in ids: index['validation']['correct_choice_mismatch']+=1
           assert index['mapped']+index['unresolved']==len(recs), index
           assert index['validation']['correct_choice_mismatch']==0, index
           json.dump(index,open(out/'qbank_ready_manifest.json','w'),ensure_ascii=False,indent=2)
           json.dump([{
-              'id':r.get('id'),'year':r.get('year'),'subject':(r.get('subject_candidates') or [None])[0],
-              'text':r.get('text'),'choices':r.get('choices'),'correct_choice_id':r.get('correct_choice_id'),
-              'solution':r.get('solution'),'question_images':r.get('question_images'),
-              'explanation_images':r.get('explanation_images'),'source_file':r.get('source_file'),
+              'id':src.get('id'),'year':r.get('year'),'subject':(r.get('subject_candidates') or [None])[0],
+              'text':src.get('text'),'choices':src.get('choices'),'correct_choice_id':src.get('correct_choice_id'),
+              'solution':src.get('solution'),'question_images':src.get('question_images'),
+              'explanation_images':src.get('explanation_images'),'source_file':r.get('source_file'),
               'source_index':r.get('source_index'),'classification_status':r.get('classification_status')
           } for r in recs],open(out/'qbank_records.json','w'),ensure_ascii=False,indent=2)
           print(json.dumps(index,indent=2))
