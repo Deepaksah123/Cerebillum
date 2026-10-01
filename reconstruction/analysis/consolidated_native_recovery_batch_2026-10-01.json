@@ -1,0 +1,61 @@
+{
+  "project": "Cerebellum reconstruction",
+  "branch": "cerebellum-pyq-phase1",
+  "checked_at": "2026-10-01",
+  "batch": "parallel-native-recovery-and-contamination-audit",
+  "contamination_policy": "CEREBELLUM_ONLY",
+  "findings": {
+    "phase1_tree_has_recovered_native_archives": true,
+    "recovered_archives": [
+      "01_core_dex.zip",
+      "02_dex_3_4.zip",
+      "03_dex5_lib_assets.zip",
+      "04_remaining_resources.zip"
+    ],
+    "apk_root_present": true,
+    "apk_root_native_evidence": [
+      "5 DEX files",
+      "binary AndroidManifest",
+      "resources.arsc",
+      "res/",
+      "assets/",
+      "lib/"
+    ],
+    "recovered_native_package": "com.marrow",
+    "recovered_launcher": "com.marrow.ui.activities.onboarding.splash.SplashActivity",
+    "recovered_native_classification": "MARROW_CONTAMINATION",
+    "contamination_gate": "BLOCKED",
+    "native_rebuild_probe": "REBUILD_PROBE_FAILED",
+    "rebuildable_android_project_verified": false,
+    "cerebellum_native_host_found": false,
+    "cerebellum_specific_android_source_found_in_webrepo_search": false,
+    "cerebellum_apk_commit_found": false,
+    "pyq_source_files": 41,
+    "pyq_questions": 9354,
+    "pyq_mapped": 7288,
+    "pyq_unresolved": 2066,
+    "pyq_ambiguous": 0,
+    "pyq_subjects": 19,
+    "pyq_years": "2015-2025",
+    "qbank_html_generated_and_validated": true,
+    "media_unique_urls": 7399,
+    "media_references": 7491,
+    "media_embedded": 0
+  },
+  "enforced_noncontamination_rules": [
+    "Do not copy Marrow DEX/resources/assets/media/lib into Cerebellum.",
+    "Do not inject Cerebellum QBank into reconstruction/apk_root while package identity is com.marrow.",
+    "Do not use repeated questions across Mock/GT/Mini/Subject Test as subject-ownership evidence.",
+    "Do not force-map the 2066 unresolved PYQs.",
+    "Do not invent Gradle files, Activities, Manifest entries, package IDs, or WebView/native architecture.",
+    "Only verified Cerebellum native evidence may become the integration host."
+  ],
+  "next_execution_gate": [
+    "Locate a separately verified Cerebellum APK/native artifact.",
+    "Verify package name and launcher identity from that artifact.",
+    "Recover its actual content-loading/assets path.",
+    "Only after identity passes, stage the already-validated Cerebellum PYQ QBank HTML.",
+    "Build, install, and runtime-test only from that verified Cerebellum host."
+  ],
+  "status": "CEREBELLUM_NATIVE_HOST_MISSING_CONTAMINATION_BLOCK_ACTIVE"
+}
