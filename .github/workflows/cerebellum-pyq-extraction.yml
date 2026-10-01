@@ -277,7 +277,7 @@ jobs:
             'sha256':h,
             'source':'reconstruction/generated/pyq/qbank_ready/cerebellum_pyq_qbank.html',
             'native_root_verified':pathlib.Path('reconstruction/apk_root').is_dir(),
-            'apk_build_verified':False
+            'apk_build_verified':False,\n              'records':9354
           }
           pathlib.Path('reconstruction/analysis/pyq_apk_asset_manifest.json').write_text(json.dumps(d,indent=2))
           print(json.dumps(d,indent=2))
