@@ -1,0 +1,48 @@
+{
+  "status": "NATIVE_HOST_IDENTITY_VERIFIED_AS_MARROW_NOT_CEREBELLUM",
+  "repository": "Deepaksah123/Cerebillum",
+  "branch": "cerebellum-pyq-phase1",
+  "evidence": {
+    "recovered_root": "reconstruction/apk_root",
+    "package": "com.marrow",
+    "launcher_activity": "com.marrow.ui.activities.onboarding.splash.SplashActivity",
+    "assembly_probe_run": 36879927147,
+    "standard_apk_sha256": "7952d84b5382e8ad58997b9101a970905c60caa12242c737b5c3ed1b77617cd0",
+    "extended_apk_sha256": "0546eb4fe237a5ac2f2eb4feb885fc93a69253a8ecd70772be22abd7e2c57bb7",
+    "recovered_native_evidence": [
+      "5 DEX files",
+      "binary AndroidManifest",
+      "resources.arsc",
+      "res/",
+      "assets/",
+      "lib/"
+    ]
+  },
+  "cerebellum_integration_decision": "BLOCKED_AND_ROLLED_BACK",
+  "reason": "The recovered native APK root is Marrow evidence. It must not be used as Cerebellum native host or receive Cerebellum QBank content.",
+  "rollback": {
+    "removed_paths": [
+      "reconstruction/apk_root/assets/cerebellum_pyq_qbank.html",
+      "reconstruction/analysis/pyq_apk_asset_manifest.json",
+      ".github/workflows/cerebellum-recovered-apk-assembly.yml",
+      "reconstruction/analysis/native_apk_assembly_probe.json"
+    ]
+  },
+  "verified_cerebellum_layer": {
+    "source_files": 41,
+    "questions": 9354,
+    "mapped": 7288,
+    "unresolved": 2066,
+    "ambiguous": 0,
+    "subjects": 19,
+    "years": "2015-2025",
+    "qbank_html_generated": true,
+    "native_integration": "PENDING_CORRECT_CEREBELLUM_NATIVE_HOST"
+  },
+  "next_safe_target": [
+    "Locate the actual Cerebellum APK/native host separately from Marrow evidence.",
+    "Identify its package name, launcher Activity, assets/content-loading path and manifest from verified Cerebellum evidence.",
+    "Only then stage the Cerebellum QBank HTML into that host.",
+    "Do not mix Marrow DEX/resources/assets/media into Cerebellum."
+  ]
+}
