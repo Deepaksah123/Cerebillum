@@ -1,0 +1,21 @@
+{
+  "status": "ASSEMBLY_PROBE_PASS",
+  "profiles": {
+    "standard": {
+      "apk": "reconstruction/native_assembly/standard_signed.apk",
+      "bytes": 110612746,
+      "sha256": "7952d84b5382e8ad58997b9101a970905c60caa12242c737b5c3ed1b77617cd0",
+      "package": "com.marrow",
+      "launchable_activity": "com.marrow.ui.activities.onboarding.splash.SplashActivity",
+      "qbank_asset_present": true
+    },
+    "extended": {
+      "apk": "reconstruction/native_assembly/extended_signed.apk",
+      "bytes": 129875342,
+      "sha256": "0546eb4fe237a5ac2f2eb4feb885fc93a69253a8ecd70772be22abd7e2c57bb7",
+      "package": "com.marrow",
+      "launchable_activity": "com.marrow.ui.activities.onboarding.splash.SplashActivity",
+      "qbank_asset_present": true
+    }
+  }
+}
