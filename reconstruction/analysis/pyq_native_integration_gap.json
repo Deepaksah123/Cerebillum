@@ -3,10 +3,9 @@
   "branch": "cerebellum-pyq-phase1",
   "checked_at": "2026-10-01",
   "native_rebuildability": {
-    "gradle_build_files_found": false,
-    "android_manifest_found": false,
-    "kotlin_or_java_app_source_found": false,
-    "rebuildable_android_project_verified": false
+    "current_apk_root_is_rebuildable_cerebellum_source": false,
+    "reason": "reconstruction/apk_root is identified as Marrow package com.marrow, not Cerebellum.",
+    "correct_cerebellum_package": "com.cerebellummobileapp"
   },
   "verified_pyq_layer": {
     "source_files": 41,
@@ -17,7 +16,11 @@
     "years": "2015-2025",
     "qbank_html_generated_and_validated": true
   },
-  "integration_status": "PENDING_NATIVE_SOURCE",
-  "allowed_next_step": "When a rebuildable Android source tree is present, copy the generated standalone QBank HTML into the native asset/WebView layer identified from original APK evidence, then build and install-test.",
-  "prohibited_assumption": "Do not claim APK integration, APK build, or install verification from the current recovered filesystem alone."
+  "integration_status": "BLOCKED_CONTAMINATION",
+  "allowed_next_step": "Locate the actual Cerebellum native host separately, verify package identity and native content-loading path, then integrate the QBank.",
+  "prohibited_assumptions": [
+    "Do not use com.marrow APK evidence as Cerebellum evidence.",
+    "Do not import Marrow DEX/resources/assets/media/lib.",
+    "Do not claim APK build/install/runtime verification."
+  ]
 }
