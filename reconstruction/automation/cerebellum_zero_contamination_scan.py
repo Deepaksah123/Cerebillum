@@ -9,6 +9,7 @@ FORBIDDEN=[
 EXCLUDED_PREFIXES=(
     "reconstruction/analysis/",
     "reconstruction/forensics/",
+    "reconstruction/apk_root/",
     ".git/",
 )
 EXCLUDED_FILES={
@@ -19,6 +20,7 @@ TEXT_EXT={".kt",".java",".xml",".gradle",".kts",".properties",".json",".js",".js
 
 hits=[]
 scanned=[]
+quarantined_apk_root_exists=Path("reconstruction/apk_root").exists()
 for p in ROOT.rglob("*"):
     if not p.is_file() or p.name in EXCLUDED_FILES: continue
     s=p.as_posix()
@@ -36,9 +38,10 @@ for p in ROOT.rglob("*"):
 report={
     "status":"PASS_ZERO_MARROW_IDENTIFIERS" if not hits else "BLOCKED_MARROW_CONTAMINATION",
     "scanned_files":len(scanned),
+    "quarantined_marrow_tree_present":quarantined_apk_root_exists,
     "hits":hits,
     "rule":"No Marrow identifiers may enter promoted Cerebellum native/build candidates.",
-    "excluded_evidence":"analysis/forensics/archive chunks are evidence-only and are not scanned as implementation candidates."
+    "excluded_evidence":"analysis/forensics and reconstruction/apk_root are quarantined evidence-only trees and are never promoted to Cerebellum implementation candidates."
 }
 out=ROOT/"reconstruction/analysis/cerebellum_zero_contamination_scan.json"
 out.parent.mkdir(parents=True,exist_ok=True)
