@@ -4,6 +4,7 @@ from pathlib import Path
 from collections import defaultdict, Counter
 
 SRC=Path("source_repo/frontend/quizx/Brain/Cerebellum")
+BRAIN=SRC.parent
 PYQ=SRC/"PYQs"
 QB=SRC/"qBank"
 OUT=Path("reconstruction/generated/pyq")
@@ -118,8 +119,8 @@ def folder_subject(path):
 
 folder_unique_key=defaultdict(set)
 folder_text=defaultdict(set)
-for p in SRC.rglob("*.json"):
-    rel=str(p.relative_to(SRC)).replace(os.sep,"/")
+for p in BRAIN.rglob("*.json"):
+    rel=str(p.relative_to(BRAIN)).replace(os.sep,"/")
     subject=folder_subject(rel)
     if not subject or "/PYQ/" not in ("/"+rel+"/").upper(): continue
     data=load_json(p)
