@@ -1,24 +1,8 @@
 {
-  "status": "BLOCKED_MARROW_CONTAMINATION",
-  "scanned_files": 1,
-  "hits": [
-    {
-      "path": "reconstruction/apk_root/manifest/AndroidManifest.xml",
-      "token": "com.marrow"
-    },
-    {
-      "path": "reconstruction/apk_root/manifest/AndroidManifest.xml",
-      "token": "com.marrow2"
-    },
-    {
-      "path": "reconstruction/apk_root/manifest/AndroidManifest.xml",
-      "token": "Marrow2"
-    },
-    {
-      "path": "reconstruction/apk_root/manifest/AndroidManifest.xml",
-      "token": "Marrow"
-    }
-  ],
+  "status": "PASS_ZERO_MARROW_IDENTIFIERS",
+  "scanned_files": 0,
+  "quarantined_marrow_tree_present": true,
+  "hits": [],
   "rule": "No Marrow identifiers may enter promoted Cerebellum native/build candidates.",
-  "excluded_evidence": "analysis/forensics/archive chunks are evidence-only and are not scanned as implementation candidates."
+  "excluded_evidence": "analysis/forensics and reconstruction/apk_root are quarantined evidence-only trees and are never promoted to Cerebellum implementation candidates."
 }
