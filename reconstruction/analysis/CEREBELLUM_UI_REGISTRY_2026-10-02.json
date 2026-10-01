@@ -1,0 +1,40 @@
+{
+  "provenance": {
+    "package": "com.cerebellummobileapp",
+    "versionName": "1.16.2",
+    "versionCode": 172,
+    "reactNative": "0.81.0",
+    "hermes": true,
+    "newArchitecture": true,
+    "bundleSha256": "d0e2d33a709316ae8fc55afd24b2540f6ab50e72ab2a9dbcaac419731be5afe2"
+  },
+  "components": [
+    "HomePage","CustomModule","ChapterList","QbankQuestions","TestAnalytics",
+    "Review","Subject","SubjectDetails","SubjectOverview","SubjectAccess",
+    "SubjectCard","Video","Profile","Notes","Flashcard","Flashcards","PlanList"
+  ],
+  "routes": [
+    "/home","/qbank","/pyq","/grand-test","/chapter","/subject",
+    "/video-category","/video-category-units","/live-tests","/test",
+    "/test-analytics","/qbank/performance-analytics","/notes","/notes-page",
+    "/flashcard","/profile","/plans","/subscription"
+  ],
+  "apiVocabulary": [
+    "/qbank","/questions-data","/question-details","/questions","/subject",
+    "/subjects","/chapter","/subject-video-detail","/video-category",
+    "/video-category-units","/video-session","/latest-video-session",
+    "/qbank-detail","/qbank-annotations","/qbank/performance-analytics",
+    "/testSessions","/test","/test-analytics","/session-result-summary",
+    "/mock_test/session-result-summary","/live-tests","/grand-test",
+    "/flashcard","/notes-page","/bookmarked-questions","/bookmarked-videos",
+    "/profile","/user-profile/me","/latest-session","/attempted-question",
+    "/subject-wise-qbank-analysis"
+  ],
+  "designEvidence": {
+    "fonts": ["Inter","OpenSauceOne","Besley"],
+    "radiusTokens": ["rounded-xl","rounded-2xl","rounded-full"],
+    "spacingVocabulary": ["p-*","px-*","py-*"],
+    "paletteVocabulary": ["primary","secondary","success","error","extras","customGray","primary-blue","primary-dark"]
+  },
+  "implementationRule": "Evidence-backed only; compiled strings are identifiers/vocabulary, not reconstructed JSX source."
+}
