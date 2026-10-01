@@ -31,3 +31,4 @@ jobs:
         with:
           name: cerebellum-pyq-extraction
           path: reconstruction/generated/pyq/
+# rerun after subject-id mapping upgrade
