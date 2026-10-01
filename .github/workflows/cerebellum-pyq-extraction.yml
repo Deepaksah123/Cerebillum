@@ -205,6 +205,34 @@ jobs:
           (out/'cerebellum_pyq_qbank.html').write_text(template,encoding='utf-8')
           print('Generated',out/'cerebellum_pyq_qbank.html','records=',len(data))
           PY
+      - name: Inline QBank images as base64
+        run: |
+          python3 - <<'PY'
+          import re,base64,mimetypes,urllib.request,pathlib
+          p=pathlib.Path('reconstruction/generated/pyq/qbank_ready/cerebellum_pyq_qbank.html')
+          s=p.read_text(encoding='utf-8')
+          urls=[]
+          seen=set()
+          for u in re.findall(r'<img\\b[^>]*?\\bsrc=["\\']([^"\\']+)["\\']',s,re.I):
+              if u.startswith(('http://','https://')) and u not in seen:
+                  seen.add(u); urls.append(u)
+          cache={}
+          for i,u in enumerate(urls,1):
+              req=urllib.request.Request(u,headers={'User-Agent':'Mozilla/5.0'})
+              with urllib.request.urlopen(req,timeout=30) as r:
+                  raw=r.read()
+                  ctype=(r.headers.get_content_type() or mimetypes.guess_type(u)[0] or 'application/octet-stream').lower()
+              cache[u]='data:'+ctype+';base64,'+base64.b64encode(raw).decode('ascii')
+              if i%100==0: print('embedded',i,'/',len(urls))
+          def repl(m):
+              u=m.group(1)
+              return m.group(0).replace(u,cache.get(u,u),1)
+          s=re.sub(r'<img\\b[^>]*?\\bsrc=["\\']([^"\\']+)["\\']',repl,s,flags=re.I)
+          p.write_text(s,encoding='utf-8')
+          remaining=re.findall(r'<img\\b[^>]*?\\bsrc=["\\'](https?://[^"\\']+)["\\']',s,re.I)
+          if remaining: raise SystemExit(f'Remote image URLs remain: {len(remaining)}')
+          print('unique remote images embedded:',len(urls))
+          PY
       - name: Persist latest audit
         run: |
           cp reconstruction/generated/pyq/pyq_audit.json reconstruction/analysis/pyq_latest_audit.json
