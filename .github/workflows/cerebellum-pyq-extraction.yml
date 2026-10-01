@@ -33,9 +33,42 @@ jobs:
           assert a['mapped_total'] + a['unresolved'] + a['ambiguous_exact'] == a['questions'], a
           print(json.dumps(a, indent=2))
           PY
+      - name: Build completeness and duplicate profile
+        run: |
+          python3 - <<'PY'
+          import json, collections, pathlib
+          base=pathlib.Path('reconstruction/generated/pyq')
+          records=json.load(open(base/'pyq_records.json'))
+          fields=['source_record','source_record.text','source_record.choices','source_record.solution','source_record.correct_choice_id','source_record.explanation_images','source_record.question_images']
+          def get(r,path):
+              v=r
+              for p in path.split('.'):
+                  if isinstance(v,dict): v=v.get(p)
+                  else: return None
+              return v
+          completeness={'records':len(records),'fields':{}}
+          for f in fields:
+              vals=[get(r,f) for r in records]
+              completeness['fields'][f]={'present':sum(v not in (None,'',[]) for v in vals),'missing':sum(v in (None,'',[]) for v in vals)}
+          status=collections.Counter(r.get('classification_status') for r in records)
+          completeness['classification_status']=dict(sorted(status.items()))
+          completeness['invariant_total']=sum(status.values())
+          hashes=collections.defaultdict(list)
+          for r in records:
+              h=r.get('question_hash')
+              if h: hashes[h].append((r.get('year'),r.get('source_file'),r.get('source_index')))
+          groups=[v for v in hashes.values() if len(v)>1]
+          duplicate={'unique_question_hashes':len(hashes),'duplicate_groups':len(groups),'records_in_duplicate_groups':sum(map(len,groups)),
+                     'note':'Repeated questions are retained. Duplication is profiled only; it is not treated as a mapping error.'}
+          json.dump(completeness,open(base/'pyq_completeness_audit.json','w'),ensure_ascii=False,indent=2)
+          json.dump(duplicate,open(base/'pyq_duplicate_profile.json','w'),ensure_ascii=False,indent=2)
+          PY
       - name: Persist latest audit
         run: |
           cp reconstruction/generated/pyq/pyq_audit.json reconstruction/analysis/pyq_latest_audit.json
+          cp reconstruction/generated/pyq/pyq_year_summary.json reconstruction/analysis/pyq_year_summary.json
+          cp reconstruction/generated/pyq/pyq_completeness_audit.json reconstruction/analysis/pyq_completeness_audit.json
+          cp reconstruction/generated/pyq/pyq_duplicate_profile.json reconstruction/analysis/pyq_duplicate_profile.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add reconstruction/analysis/pyq_latest_audit.json
