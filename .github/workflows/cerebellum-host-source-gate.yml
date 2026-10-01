@@ -1,0 +1,57 @@
+name: Cerebellum Host Source Gate
+
+on:
+  push:
+    paths:
+      - 'app/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'reconstruction/native_source/**'
+      - '.github/workflows/cerebellum-host-source-gate.yml'
+  workflow_dispatch:
+
+jobs:
+  source-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify Cerebellum package boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f app/build.gradle
+          test -f settings.gradle
+          test -f build.gradle
+          test -d app/src/main/java/com/cerebellummobileapp
+
+          if grep -RniE 'com\.marrow|com/marrow|marrow2|prepladder' app reconstruction/native_source/cerebellummobileapp; then
+            echo "Forbidden contamination detected"
+            exit 1
+          fi
+
+      - name: Verify native host class set
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in BuildConfig DeXModule DeXPackage DevOptionsModule DevOptionsPackage FullscreenChipOverlayPackage MainActivity MainApplication PipActionReceiver PipHelperModule PipHelperPackage ScreenshotModule ScreenshotPackage; do
+            test -f "app/src/main/java/com/cerebellummobileapp/$f.java"
+          done
+
+      - name: Verify evidence locks
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'com.cerebellummobileapp' app/build.gradle
+          grep -q "versionCode 172" app/build.gradle
+          grep -q "versionName '1.16.2'" app/build.gradle
+          grep -q 'minSdk 26' app/build.gradle
+          grep -q 'targetSdk 36' app/build.gradle
+
+      - name: Explicitly block unproven full build
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -f app/src/main/assets/index.android.bundle
+          echo "PASS: exact Hermes bundle is not being fabricated or replaced."
+          echo "Build remains gated until the exact bundle, dependency lock, manifest/resources are promoted from verified evidence."
