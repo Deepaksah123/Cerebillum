@@ -1,0 +1,41 @@
+{
+  "records": 9354,
+  "fields": {
+    "source_record": {
+      "present": 9354,
+      "missing": 0
+    },
+    "source_record.text": {
+      "present": 9354,
+      "missing": 0
+    },
+    "source_record.choices": {
+      "present": 9354,
+      "missing": 0
+    },
+    "source_record.solution": {
+      "present": 9354,
+      "missing": 0
+    },
+    "source_record.correct_choice_id": {
+      "present": 9354,
+      "missing": 0
+    },
+    "source_record.explanation_images": {
+      "present": 0,
+      "missing": 9354
+    },
+    "source_record.question_images": {
+      "present": 0,
+      "missing": 9354
+    }
+  },
+  "classification_status": {
+    "MAPPED_CROSS_SOURCE_TEXT_METADATA": 2,
+    "MAPPED_QBANK_MAP_ID": 121,
+    "MAPPED_SUBJECT_ID_CANONICAL": 6329,
+    "MAPPED_VIDEO_SUBJECT_METADATA": 836,
+    "UNRESOLVED": 2066
+  },
+  "invariant_total": 9354
+}

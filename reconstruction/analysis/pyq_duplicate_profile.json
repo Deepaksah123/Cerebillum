@@ -1,0 +1,6 @@
+{
+  "unique_question_hashes": 9254,
+  "duplicate_groups": 96,
+  "records_in_duplicate_groups": 196,
+  "note": "Repeated questions are retained. Duplication is profiled only; it is not treated as a mapping error."
+}
