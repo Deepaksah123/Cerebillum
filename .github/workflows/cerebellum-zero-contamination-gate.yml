@@ -1,0 +1,34 @@
+name: Cerebellum Zero Contamination Gate
+
+on:
+  push:
+    branches: [cerebellum-pyq-phase1]
+    paths:
+      - 'app/**'
+      - 'android/**'
+      - 'src/**'
+      - 'native/**'
+      - 'reconstruction/native/**'
+      - 'reconstruction/build/**'
+      - 'reconstruction/automation/cerebellum_zero_contamination_scan.py'
+      - '.github/workflows/cerebellum-zero-contamination-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  contamination:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Cerebellum-only contamination scan
+        run: python3 reconstruction/automation/cerebellum_zero_contamination_scan.py
+      - name: Persist scan result
+        if: always()
+        run: |
+          git config user.name "cerebellum-contamination-gate-bot"
+          git config user.email "41898282+github-actions[bot]@noreply.github.com"
+          git add reconstruction/analysis/cerebellum_zero_contamination_scan.json
+          git diff --cached --quiet || git commit -m "Persist Cerebellum zero-contamination scan"
+          git push
