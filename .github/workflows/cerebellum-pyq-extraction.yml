@@ -273,6 +273,30 @@ jobs:
           assert m['records']==9354,m
           print('Recovered APK asset injection PASS:',m['bytes'],'bytes')
           PY
+      - name: Stage generated PYQ QBank into recovered APK asset layer
+        run: |
+          test -s reconstruction/generated/pyq/qbank_ready/cerebellum_pyq_qbank.html
+          mkdir -p reconstruction/apk_root/assets
+          cp reconstruction/generated/pyq/qbank_ready/cerebellum_pyq_qbank.html reconstruction/apk_root/assets/cerebellum_pyq_qbank.html
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          p=pathlib.Path('reconstruction/apk_root/assets/cerebellum_pyq_qbank.html')
+          h=hashlib.sha256(p.read_bytes()).hexdigest()
+          d={
+            'status':'ASSET_LAYER_STAGED',
+            'asset_path':str(p),
+            'bytes':p.stat().st_size,
+            'sha256':h,
+            'source':'reconstruction/generated/pyq/qbank_ready/cerebellum_pyq_qbank.html',
+            'native_root_verified':pathlib.Path('reconstruction/apk_root').is_dir(),
+            'apk_build_verified':False
+          }
+          pathlib.Path('reconstruction/analysis/pyq_apk_asset_manifest.json').write_text(json.dumps(d,indent=2))
+          print(json.dumps(d,indent=2))
+          PY
+          test -s reconstruction/apk_root/assets/cerebellum_pyq_qbank.html
+          test -s reconstruction/analysis/pyq_apk_asset_manifest.json
+
       - name: Stage native integration handoff
         run: |
           python3 - <<'PY'
