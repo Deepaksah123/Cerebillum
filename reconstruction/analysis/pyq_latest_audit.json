@@ -6,6 +6,7 @@
   "mapped_qbank_id": 0,
   "mapped_qbank_unique_key": 0,
   "mapped_qbank_map_id": 161,
+  "mapped_qbank_choice_id": 0,
   "mapped_exact": 0,
   "mapped_total": 6490,
   "ambiguous_exact": 0,
@@ -14,6 +15,7 @@
   "qbank_id_index_entries": 14731,
   "qbank_unique_key_index_entries": 14731,
   "qbank_map_id_index_entries": 14803,
+  "qbank_choice_id_index_entries": 58923,
   "canonical_subject_count": 19,
   "canonical_subject_by_id": {
     "1": "Biochemistry",
@@ -36,5 +38,5 @@
     "18": "Dermatology",
     "19": "Anesthesia"
   },
-  "policy": "Use explicit source subjects_id first. If absent/unusable, use exact source id/unique_key/map_id linkage to qBank records only when the linkage resolves to exactly one qBank subject folder. Then use unique exact normalized question text. Never infer subject from question content."
+  "policy": "Use explicit source subjects_id first. If absent/unusable, use exact source id/unique_key/map_id/choice-id linkage to qBank records only when the linkage resolves to exactly one qBank subject folder. Then use unique exact normalized question text. Never infer subject from question content."
 }
