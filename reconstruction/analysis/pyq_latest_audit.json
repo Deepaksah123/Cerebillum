@@ -18,8 +18,8 @@
   "unresolved": 2066,
   "cross_source_unique_key_index_entries": 22052,
   "cross_source_text_index_entries": 21664,
-  "subject_folder_pyq_unique_key_index_entries": 0,
-  "subject_folder_pyq_text_index_entries": 0,
+  "subject_folder_pyq_unique_key_index_entries": 3740,
+  "subject_folder_pyq_text_index_entries": 3648,
   "canonical_subject_count": 19,
   "canonical_subject_by_id": {
     "1": "Biochemistry",
