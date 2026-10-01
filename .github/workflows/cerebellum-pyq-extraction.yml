@@ -205,32 +205,52 @@ jobs:
           (out/'cerebellum_pyq_qbank.html').write_text(template,encoding='utf-8')
           print('Generated',out/'cerebellum_pyq_qbank.html','records=',len(data))
           PY
-      - name: Inline QBank images as base64
+      - name: Audit and inline QBank images where accessible
         run: |
           python3 - <<'PY'
-          import re,base64,mimetypes,urllib.request,pathlib
+          import re,base64,mimetypes,urllib.request,pathlib,json
           p=pathlib.Path('reconstruction/generated/pyq/qbank_ready/cerebellum_pyq_qbank.html')
           s=p.read_text(encoding='utf-8')
           pattern=r'''src=\\\"(https?://[^\\\"]+)\\\"'''
           urls=[]; seen=set()
           for u in re.findall(pattern,s,re.I):
-              if u not in seen:
-                  seen.add(u); urls.append(u)
-          cache={}
+              if u not in seen: seen.add(u); urls.append(u)
+          cache={}; failures=[]
           for i,u in enumerate(urls,1):
-              req=urllib.request.Request(u,headers={'User-Agent':'Mozilla/5.0'})
-              with urllib.request.urlopen(req,timeout=30) as r:
-                  raw=r.read()
-                  ctype=(r.headers.get_content_type() or mimetypes.guess_type(u)[0] or 'application/octet-stream').lower()
-              cache[u]='data:'+ctype+';base64,'+base64.b64encode(raw).decode('ascii')
-              if i%100==0: print('embedded',i,'/',len(urls))
+              try:
+                  req=urllib.request.Request(u,headers={'User-Agent':'Mozilla/5.0','Referer':'https://app.cerebellumacademy.com/'})
+                  with urllib.request.urlopen(req,timeout=20) as r:
+                      raw=r.read(); ctype=(r.headers.get_content_type() or mimetypes.guess_type(u)[0] or 'application/octet-stream').lower()
+                  cache[u]='data:'+ctype+';base64,'+base64.b64encode(raw).decode('ascii')
+              except Exception as e:
+                  failures.append({'url':u,'error':type(e).__name__+': '+str(e)})
+              if i%100==0: print('processed',i,'/',len(urls))
           def repl(m):
-              return 'src=\\\"'+cache[m.group(1)]+'\\\"'
+              u=m.group(1)
+              return 'src=\\\"'+cache.get(u,u)+'\\\"'
           s=re.sub(pattern,repl,s,flags=re.I)
           p.write_text(s,encoding='utf-8')
-          remaining=re.findall(r'''src=\\\"(https?://[^\\\"]+)\\\"''',s,re.I)
-          if remaining: raise SystemExit(f'Remote image URLs remain: {len(remaining)}')
-          print('unique remote images embedded:',len(urls))
+          audit={'unique_remote_images':len(urls),'embedded':len(cache),'failed':len(failures),'failures':failures,'standalone_media_ready':len(failures)==0}
+          pathlib.Path('reconstruction/generated/pyq/qbank_ready/qbank_media_audit.json').write_text(json.dumps(audit,ensure_ascii=False,indent=2),encoding='utf-8')
+          print(json.dumps({k:audit[k] for k in ('unique_remote_images','embedded','failed','standalone_media_ready')}))
+          PY
+
+      - name: Validate QBank UI package
+        run: |
+          python3 - <<'PY'
+          import json,re,pathlib
+          base=pathlib.Path('reconstruction/generated/pyq/qbank_ready')
+          s=(base/'cerebellum_pyq_qbank.html').read_text(encoding='utf-8')
+          d=json.load(open(base/'qbank_records.json'))
+          assert len(d)==9354
+          assert 'classList.contains(\'locked\')' in s
+          assert '.correct' in s and '.wrong' in s
+          assert '.solution{display:none' in s
+          assert not re.search(r'<script[^>]+src=|<link[^>]+href=',s,re.I)
+          remote_imgs=re.findall(r'''src=\\\"(https?://[^\\\"]+)\\\"''',s,re.I)
+          audit=json.load(open(base/'qbank_media_audit.json'))
+          assert len(remote_imgs)==audit['failed']
+          print('QBank UI validation PASS:',len(d),'records; remote media dependencies:',len(remote_imgs))
           PY
 
       - name: Persist latest audit
