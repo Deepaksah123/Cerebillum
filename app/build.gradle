@@ -1,0 +1,25 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.cerebellummobileapp'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.cerebellummobileapp'
+        minSdk 26
+        targetSdk 36
+        versionCode 172
+        versionName '1.16.2'
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+dependencies {
+    // React Native 0.81.0 dependency wiring must be finalized against the
+    // exact recovered dependency set before claiming a reproducible build.
+}
