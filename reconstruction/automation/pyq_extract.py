@@ -98,6 +98,41 @@ for p in SRC.rglob("*.json"):
             cross_text[nk].add(subject)
             cross_evidence[("text",nk)].append({"subject":subject,"file":rel})
 
+PYQ_FOLDER_ALIASES={
+    "biochemistry":"Biochemistry","physiology":"Physiology","anatomy":"Anatomy",
+    "pharmacology":"Pharmacology","pathology":"Pathology","microbiology":"Microbiology",
+    "psm":"Preventive & Social Medicine","preventive & social medicine":"Preventive & Social Medicine",
+    "ophthalmology":"Ophthalmology","ent":"ENT","forensic medicine":"Forensic Medicine",
+    "medicine":"Medicine","surgery":"Surgery","pediatrics":"Pediatrics","paediatrics":"Pediatrics",
+    "ob g":"Obstetrics & Gynecology","obg":"Obstetrics & Gynecology","obstetrics & gynecology":"Obstetrics & Gynecology",
+    "orthopedics":"Orthopedics","orthopaedics":"Orthopedics","psychiatry":"Psychiatry",
+    "radiology":"Radiology","dermatology":"Dermatology","anesthesia":"Anesthesia","anaesthesia":"Anesthesia"
+}
+def folder_subject(path):
+    parts=[x.strip().lower() for x in Path(path).parts]
+    try:
+        i=parts.index("pyq")
+        if i+1 < len(parts): return PYQ_FOLDER_ALIASES.get(parts[i+1])
+    except ValueError: pass
+    return None
+
+folder_unique_key=defaultdict(set)
+folder_text=defaultdict(set)
+for p in SRC.rglob("*.json"):
+    rel=str(p.relative_to(SRC)).replace(os.sep,"/")
+    subject=folder_subject(rel)
+    if not subject or "/PYQ/" not in ("/"+rel+"/").upper(): continue
+    data=load_json(p)
+    if data is None: continue
+    rows=data if isinstance(data,list) else data.get("questions",data.get("data",[]))
+    if not isinstance(rows,list): continue
+    for row in rows:
+        if not isinstance(row,dict): continue
+        uk=row.get("unique_key")
+        if uk: folder_unique_key[str(uk)].add(subject)
+        nk=norm(row.get("question") or row.get("question_text") or row.get("text"))
+        if nk and len(nk)>=20: folder_text[nk].add(subject)
+
 VIDEO_SUBJECT_ALIASES={
     "biochemistry":"Biochemistry","physiology":"Physiology","anatomy":"Anatomy",
     "pharmacology":"Pharmacology","pathology":"Pathology","microbiology":"Microbiology",
@@ -125,7 +160,7 @@ def video_subject_candidates(row):
 summary=defaultdict(lambda:{"files":0,"questions":0,"subject_id_mapped":0,"canonical_subject_id_mapped":0,
                             "qbank_id_mapped":0,"qbank_unique_key_mapped":0,"qbank_map_id_mapped":0,"qbank_choice_id_mapped":0,
                             "video_subject_mapped":0,"cross_source_unique_key_mapped":0,"cross_source_text_mapped":0,
-                            "exact_mapped":0,"subject_mapped":0,"unresolved":0,"ambiguous":0})
+                            "folder_pyq_unique_key_mapped":0,"folder_pyq_text_mapped":0,"exact_mapped":0,"subject_mapped":0,"unresolved":0,"ambiguous":0})
 records=[]
 
 for p in sorted(PYQ.rglob("*.json")):
@@ -229,7 +264,28 @@ for p in sorted(PYQ.rglob("*.json")):
                                     status="AMBIGUOUS_CROSS_SOURCE_TEXT"
                                     evidence="exact normalized question text matched multiple explicit canonical subjects"
                                 else:
-                                    subjects=sorted(exact.get(nk,set()))
+                                    folder_uk_cands=folder_unique_key.get(str(row.get("unique_key")),set()) if row.get("unique_key") else set()
+                                    folder_text_cands=folder_text.get(nk,set())
+                                    if len(folder_uk_cands)==1:
+                                        subjects=sorted(folder_uk_cands)
+                                        status="MAPPED_SUBJECT_FOLDER_PYQ_UNIQUE_KEY"
+                                        evidence="exact unique_key -> subject-labeled DocTutorial/PYQ folder"
+                                        summary[year]["folder_pyq_unique_key_mapped"]+=1
+                                    elif len(folder_uk_cands)>1:
+                                        subjects=[]
+                                        status="AMBIGUOUS_SUBJECT_FOLDER_PYQ_UNIQUE_KEY"
+                                        evidence="exact unique_key matched multiple subject-labeled DocTutorial/PYQ folders"
+                                    elif len(folder_text_cands)==1:
+                                        subjects=sorted(folder_text_cands)
+                                        status="MAPPED_SUBJECT_FOLDER_PYQ_TEXT"
+                                        evidence="exact normalized question text -> unique subject-labeled DocTutorial/PYQ folder"
+                                        summary[year]["folder_pyq_text_mapped"]+=1
+                                    elif len(folder_text_cands)>1:
+                                        subjects=[]
+                                        status="AMBIGUOUS_SUBJECT_FOLDER_PYQ_TEXT"
+                                        evidence="exact normalized question text matched multiple subject-labeled DocTutorial/PYQ folders"
+                                    else:
+                                        subjects=sorted(exact.get(nk,set()))
                                     if len(subjects)==1:
                                         status="MAPPED_EXACT"
                                         evidence="unique exact normalized question text -> qBank subject"
@@ -276,15 +332,19 @@ audit={
     "mapped_video_subject_metadata":sum(v["video_subject_mapped"] for v in summary.values()),
     "mapped_cross_source_unique_key_metadata":sum(v["cross_source_unique_key_mapped"] for v in summary.values()),
     "mapped_cross_source_text_metadata":sum(v["cross_source_text_mapped"] for v in summary.values()),
+    "mapped_subject_folder_pyq_unique_key":sum(v["folder_pyq_unique_key_mapped"] for v in summary.values()),
+    "mapped_subject_folder_pyq_text":sum(v["folder_pyq_text_mapped"] for v in summary.values()),
     "mapped_exact":sum(v["exact_mapped"] for v in summary.values()),
     "mapped_total":sum(v["subject_mapped"] for v in summary.values()),
     "ambiguous_exact":sum(v["ambiguous"] for v in summary.values()),
     "unresolved":sum(v["unresolved"] for v in summary.values()),
     "cross_source_unique_key_index_entries":len(cross_unique_key),
     "cross_source_text_index_entries":len(cross_text),
+    "subject_folder_pyq_unique_key_index_entries":len(folder_unique_key),
+    "subject_folder_pyq_text_index_entries":len(folder_text),
     "canonical_subject_count":len(canonical_subject_by_id),
     "canonical_subject_by_id":{str(k):v for k,v in sorted(canonical_subject_by_id.items())},
-    "policy":"Explicit source subjects_id first; exact qBank id/unique_key/map_id/choice-id next; then exact unique_key or exact normalized question text against non-PYQ/non-qBank records carrying explicit canonical subjects_id; then unique exact qBank text. Never infer subject from content or mere duplication across tests/modules."
+    "policy":"Explicit source subjects_id first; exact qBank id/unique_key/map_id/choice-id next; then exact unique_key or exact normalized question text against non-PYQ/non-qBank records carrying explicit canonical subjects_id; then exact unique_key/text against a subject-labeled DocTutorial/PYQ folder; then unique exact qBank text. Never infer subject from content or mere duplication across tests/modules."
 }
 (Path(OUT/"pyq_records.json")).write_text(json.dumps(records,ensure_ascii=False,indent=2),encoding="utf-8")
 (Path(OUT/"pyq_year_summary.json")).write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding="utf-8")
