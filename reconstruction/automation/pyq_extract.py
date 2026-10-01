@@ -77,9 +77,34 @@ for subject, counts in subject_id_counts_by_subject.items():
 canonical_id_to_subject={sid:subs for sid,subs in canonical_id_to_subject.items() if len(subs)==1}
 canonical_subject_by_id={sid:subs[0] for sid,subs in canonical_id_to_subject.items()}
 
+VIDEO_SUBJECT_ALIASES={
+    "biochemistry":"Biochemistry","physiology":"Physiology","anatomy":"Anatomy",
+    "pharmacology":"Pharmacology","pathology":"Pathology","microbiology":"Microbiology",
+    "preventive":"Preventive & Social Medicine","psm":"Preventive & Social Medicine",
+    "ophthalmology":"Ophthalmology","ophthal":"Ophthalmology","ent":"ENT",
+    "forensic":"Forensic Medicine","medicine":"Medicine","surgery":"Surgery",
+    "pediatrics":"Pediatrics","paediatrics":"Pediatrics","obg":"Obstetrics & Gynecology",
+    "obs":"Obstetrics & Gynecology","gynecology":"Obstetrics & Gynecology",
+    "orthopedics":"Orthopedics","orthopaedics":"Orthopedics","psychiatry":"Psychiatry",
+    "radiology":"Radiology","dermatology":"Dermatology","anesthesia":"Anesthesia",
+    "anaesthesia":"Anesthesia"
+}
+def video_subject_candidates(row):
+    urls=[]
+    for key in ("solution_video","explanation_video","question_video"):
+        v=row.get(key)
+        if isinstance(v,str) and v: urls.append(v.lower())
+    found=set()
+    for u in urls:
+        name=re.sub(r"[^a-z0-9]+"," ",u)
+        for alias,subject in VIDEO_SUBJECT_ALIASES.items():
+            if re.search(rf"\\b{re.escape(alias)}\\b",name):
+                found.add(subject)
+    return found
+
 summary=defaultdict(lambda:{"files":0,"questions":0,"subject_id_mapped":0,"canonical_subject_id_mapped":0,
                             "qbank_id_mapped":0,"qbank_unique_key_mapped":0,"qbank_map_id_mapped":0,"qbank_choice_id_mapped":0,
-                            "exact_mapped":0,"subject_mapped":0,"unresolved":0,"ambiguous":0})
+                            "video_subject_mapped":0,"exact_mapped":0,"subject_mapped":0,"unresolved":0,"ambiguous":0})
 records=[]
 
 for p in sorted(PYQ.rglob("*.json")):
@@ -124,7 +149,14 @@ for p in sorted(PYQ.rglob("*.json")):
             summary[year]["subject_id_mapped"]+=1
 
         else:
-            qid_candidates=qbank_id_to_subject.get(source_id_int,set()) if source_id_int is not None else set()
+            video_candidates=video_subject_candidates(row)
+            if len(video_candidates)==1:
+                subjects=sorted(video_candidates)
+                status="MAPPED_VIDEO_SUBJECT_METADATA"
+                evidence="explicit subject token in source solution/explanation/question video filename"
+                summary[year]["video_subject_mapped"]+=1
+            else:
+                qid_candidates=qbank_id_to_subject.get(source_id_int,set()) if source_id_int is not None else set()
             if len(qid_candidates)==1:
                 subjects=sorted(qid_candidates)
                 status="MAPPED_QBANK_ID"
@@ -203,6 +235,7 @@ audit={
     "mapped_qbank_unique_key":sum(v["qbank_unique_key_mapped"] for v in summary.values()),
     "mapped_qbank_map_id":sum(v["qbank_map_id_mapped"] for v in summary.values()),
     "mapped_qbank_choice_id":sum(v["qbank_choice_id_mapped"] for v in summary.values()),
+    "mapped_video_subject_metadata":sum(v["video_subject_mapped"] for v in summary.values()),
     "mapped_exact":sum(v["exact_mapped"] for v in summary.values()),
     "mapped_total":sum(v["subject_mapped"] for v in summary.values()),
     "ambiguous_exact":sum(v["ambiguous"] for v in summary.values()),
