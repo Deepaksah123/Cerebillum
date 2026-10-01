@@ -63,15 +63,61 @@ jobs:
           json.dump(completeness,open(base/'pyq_completeness_audit.json','w'),ensure_ascii=False,indent=2)
           json.dump(duplicate,open(base/'pyq_duplicate_profile.json','w'),ensure_ascii=False,indent=2)
           PY
+      - name: Build subject-year and unresolved packages
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, re
+          base=pathlib.Path('reconstruction/generated/pyq')
+          records=json.load(open(base/'pyq_records.json'))
+          out=base/'packages'
+          out.mkdir(parents=True,exist_ok=True)
+          subject_names={
+            1:'Biochemistry',2:'Physiology',3:'Anatomy',4:'Pharmacology',5:'Pathology',
+            6:'Microbiology',7:'Preventive & Social Medicine',8:'Ophthalmology',9:'ENT',
+            10:'Forensic Medicine',11:'Medicine',12:'Surgery',13:'Pediatrics',
+            14:'Obstetrics & Gynecology',15:'Orthopedics',16:'Psychiatry',17:'Radiology',
+            18:'Dermatology',19:'Anesthesia'
+          }
+          def safe(s): return re.sub(r'[^A-Za-z0-9._-]+','_',s).strip('_') or 'Unknown'
+          index={'subjects':{},'years':{},'unresolved':{},'total_records':len(records),'mapped_records':0,'unresolved_records':0}
+          buckets={}
+          unresolved={}
+          for r in records:
+              year=r.get('year','Unknown')
+              st=r.get('classification_status')
+              if st=='UNRESOLVED':
+                  unresolved.setdefault(year,[]).append(r)
+                  continue
+              sid=r.get('canonical_subject_id') or r.get('mapped_subject_id')
+              if sid not in subject_names: continue
+              subj=subject_names[sid]
+              index['mapped_records']+=1
+              buckets.setdefault((subj,year),[]).append(r)
+          index['unresolved_records']=sum(len(v) for v in unresolved.values())
+          for (subj,year),rows in buckets.items():
+              d=out/'subject_year'/safe(subj)
+              d.mkdir(parents=True,exist_ok=True)
+              json.dump(rows,open(d/f'{safe(year)}.json','w'),ensure_ascii=False,indent=2)
+              index['subjects'].setdefault(subj,{})[year]=len(rows)
+              index['years'][year]=index['years'].get(year,0)+len(rows)
+          for year,rows in unresolved.items():
+              d=out/'unresolved'; d.mkdir(parents=True,exist_ok=True)
+              json.dump(rows,open(d/f'{safe(year)}.json','w'),ensure_ascii=False,indent=2)
+              index['unresolved'][year]=len(rows)
+          json.dump(index,open(out/'pyq_subject_year_manifest.json','w'),ensure_ascii=False,indent=2)
+          assert index['mapped_records'] + index['unresolved_records'] == len(records), index
+          print(json.dumps(index,indent=2))
+          PY
       - name: Persist latest audit
         run: |
           cp reconstruction/generated/pyq/pyq_audit.json reconstruction/analysis/pyq_latest_audit.json
           cp reconstruction/generated/pyq/pyq_year_summary.json reconstruction/analysis/pyq_year_summary.json
           cp reconstruction/generated/pyq/pyq_completeness_audit.json reconstruction/analysis/pyq_completeness_audit.json
           cp reconstruction/generated/pyq/pyq_duplicate_profile.json reconstruction/analysis/pyq_duplicate_profile.json
+          cp reconstruction/generated/pyq/packages/pyq_subject_year_manifest.json reconstruction/analysis/pyq_subject_year_manifest.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add reconstruction/analysis/pyq_latest_audit.json reconstruction/analysis/pyq_year_summary.json reconstruction/analysis/pyq_completeness_audit.json reconstruction/analysis/pyq_duplicate_profile.json
+          git add reconstruction/analysis/pyq_latest_audit.json reconstruction/analysis/pyq_year_summary.json reconstruction/analysis/pyq_completeness_audit.json reconstruction/analysis/pyq_duplicate_profile.json reconstruction/analysis/pyq_subject_year_manifest.json
           git diff --cached --quiet || git commit -m "chore: persist latest PYQ audit [skip ci]"
           git push
       - name: Upload extraction artifacts
