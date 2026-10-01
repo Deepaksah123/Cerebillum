@@ -1,0 +1,57 @@
+{
+  "project": "Cerebellum reconstruction",
+  "branch": "cerebellum-pyq-phase1",
+  "checked_at": "2026-10-01",
+  "batch": "max-capacity-parallel-native-host-recovery-v4",
+  "source_archive": {
+    "library_path": "/base (1).apk_Decompiler.com.zip",
+    "size_bytes": 104477964,
+    "entries": 46647,
+    "java_sources": 22090,
+    "smali_files": 22321
+  },
+  "verified_identity": {
+    "package": "com.cerebellummobileapp",
+    "main_activity": "com.cerebellummobileapp.MainActivity",
+    "application": "com.cerebellummobileapp.MainApplication",
+    "main_component": "cerebellumMobileApp",
+    "react_native": true,
+    "react_native_version": "0.81.0",
+    "hermes": true,
+    "new_architecture": true,
+    "js_bundle": "resources/assets/index.android.bundle"
+  },
+  "exact_native_evidence": {
+    "manifest": "resources/AndroidManifest.xml",
+    "main_activity_java": "sources/com/cerebellummobileapp/MainActivity.java",
+    "main_application_java": "sources/com/cerebellummobileapp/MainApplication.java",
+    "main_activity_smali": "smali/com/cerebellummobileapp/MainActivity.smali",
+    "main_application_smali": "smali/com/cerebellummobileapp/MainApplication.smali",
+    "bundle": "resources/assets/index.android.bundle"
+  },
+  "native_behavior": {
+    "main_activity": "ReactActivity + DefaultReactActivityDelegate + Fabric/New Architecture + picture-in-picture",
+    "main_application": "DefaultReactNativeHost; Hermes enabled; New Architecture enabled; PackageList + app-specific native packages; HotUpdater bundle override"
+  },
+  "repository_state": {
+    "verified_cerebellum_native_host": "YES_FROM_LIBRARY_ARCHIVE",
+    "rebuildable_gradle_project": "NOT_YET",
+    "existing_reconstruction_apk_root_package": "com.marrow",
+    "existing_reconstruction_apk_root_usable_for_cerebellum": "NO"
+  },
+  "pyq_state": {
+    "total": 9354,
+    "mapped": 7288,
+    "unresolved": 2066,
+    "ambiguous": 0,
+    "qbank_html_validated": true
+  },
+  "contamination_gate": {
+    "status": "PASS",
+    "rule": "Only com.cerebellummobileapp evidence may be used for Cerebellum native reconstruction.",
+    "marrow_native_root_blocked": true,
+    "marrow_content_not_used": true,
+    "unresolved_not_force_mapped": true
+  },
+  "next_gate": "Reconstruct a buildable RN 0.81.0 Android project from the verified Cerebellum native evidence, then wire the validated PYQ QBank without importing Marrow assets/code/content."
+}
