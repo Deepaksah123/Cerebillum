@@ -279,7 +279,7 @@ jobs:
           cp reconstruction/generated/pyq/packages/pyq_subject_year_manifest.json reconstruction/analysis/pyq_subject_year_manifest.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add reconstruction/apk_root/assets/cerebellum_pyq_qbank.html reconstruction/analysis/pyq_apk_asset_manifest.json reconstruction/analysis/pyq_latest_audit.json reconstruction/analysis/pyq_year_summary.json reconstruction/analysis/pyq_completeness_audit.json reconstruction/analysis/pyq_duplicate_profile.json reconstruction/analysis/pyq_subject_year_manifest.json
+          git add reconstruction/analysis/pyq_latest_audit.json reconstruction/analysis/pyq_year_summary.json reconstruction/analysis/pyq_completeness_audit.json reconstruction/analysis/pyq_duplicate_profile.json reconstruction/analysis/pyq_subject_year_manifest.json
           git diff --cached --quiet || git commit -m "chore: persist latest PYQ audit [skip ci]"
           git push
       - name: Upload extraction artifacts
