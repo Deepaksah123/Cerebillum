@@ -1,0 +1,59 @@
+name: Cerebellum Contamination Barrier
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contamination-barrier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Reject quarantined legacy paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          forbidden_paths=(
+            'reconstruction/apk_root'
+            'reconstruction/analysis/batches'
+            'reconstruction/analysis/deep'
+            'reconstruction/analysis/ORGANIZATION_MANIFEST.md'
+            'reconstruction/analysis/ORGANIZED_FILE_LIST.txt'
+            'reconstruction/analysis/ORGANIZED_SHA256.txt'
+          )
+          for p in "${forbidden_paths[@]}"; do
+            if [ -e "$p" ]; then
+              echo "FORBIDDEN LEGACY PATH PRESENT: $p"
+              exit 1
+            fi
+          done
+
+      - name: Reject Marrow or Prepladder implementation contamination
+        shell: bash
+        run: |
+          set -euo pipefail
+          targets=(
+            'app'
+            'reconstruction/native_source/cerebellummobileapp'
+          )
+          for d in "${targets[@]}"; do
+            [ -e "$d" ] || continue
+            if grep -RniE 'com\.marrow|com/marrow|marrow2|prepladder' "$d"; then
+              echo "FORBIDDEN IMPLEMENTATION CONTAMINATION IN: $d"
+              exit 1
+            fi
+          done
+
+      - name: Verify Cerebellum package boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d app/src/main/java/com/cerebellummobileapp
+          test -f app/src/main/AndroidManifest.xml
+          grep -q 'com.cerebellummobileapp' app/src/main/AndroidManifest.xml
