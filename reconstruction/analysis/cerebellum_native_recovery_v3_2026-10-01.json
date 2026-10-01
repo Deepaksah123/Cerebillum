@@ -1,0 +1,70 @@
+{
+  "project": "Cerebellum reconstruction",
+  "branch": "cerebellum-pyq-phase1",
+  "checked_at": "2026-10-01",
+  "batch": "max-capacity-parallel-native-recovery-v3",
+  "provenance": {
+    "policy": "CEREBELLUM_ONLY",
+    "cerebellum_library_evidence": [
+      "Cerebellum_Decompiler_Forensic_Report.md",
+      "GROUND_TRUTH_UI_MAP.md",
+      "Cerebellum_APK_EXACT_PATH_TREE.txt",
+      "index.android.bundle.CONTENT-MAP.md"
+    ],
+    "verified_package": "com.cerebellummobileapp",
+    "verified_main_activity": "com.cerebellummobileapp.MainActivity",
+    "verified_rn_component": "cerebellumMobileApp",
+    "verified_bundle": "assets/index.android.bundle",
+    "verified_decompiler_entries": 46647,
+    "verified_smali": "22000+",
+    "verified_jadx_sources": true
+  },
+  "repository_findings": {
+    "recovered_archives_present": [
+      "01_core_dex.zip",
+      "02_dex_3_4.zip",
+      "03_dex5_lib_assets.zip",
+      "04_remaining_resources.zip"
+    ],
+    "apk_root_present": true,
+    "apk_root_package": "com.marrow",
+    "apk_root_allowed_for_cerebellum": false,
+    "contamination_gate": "BLOCKED",
+    "rebuild_probe": "REBUILD_PROBE_FAILED",
+    "rebuildable_android_project_in_repo": false
+  },
+  "pyq_layer": {
+    "source_files": 41,
+    "questions": 9354,
+    "mapped": 7288,
+    "unresolved": 2066,
+    "ambiguous": 0,
+    "subjects": 19,
+    "years": "2015-2025",
+    "qbank_html_generated_and_validated": true,
+    "media_unique_urls": 7399,
+    "media_references": 7491,
+    "media_embedded": 0
+  },
+  "decision": {
+    "native_host_identity": "VERIFIED_FROM_CEREBELLUM_FORENSIC_LIBRARY_EVIDENCE",
+    "native_source_bytes_materialized_in_repo": false,
+    "integration": "BLOCKED_PENDING_CEREBELLUM_NATIVE_SOURCE_MATERIALIZATION",
+    "reason": "The repository's recovered native APK root is independently identified as Marrow. Cerebellum's verified decompiler/source evidence exists in the Library but its native source tree is not materialized in the Cerebillum repository.",
+    "safe_next_step": [
+      "Materialize the verified Cerebellum decompiler/source tree or exact APK into the Cerebellum workspace.",
+      "Verify package, MainActivity, manifest, assets/index.android.bundle and resource ownership from that materialized artifact.",
+      "Create the rebuildable Android/React-Native host only from that Cerebellum evidence.",
+      "Stage the already-validated Cerebellum PYQ HTML only into the verified Cerebellum asset/content layer.",
+      "Build and runtime-test before claiming APK integration."
+    ]
+  },
+  "contamination_guards": [
+    "Never use reconstruction/apk_root as Cerebellum host.",
+    "Never copy Marrow DEX/resources/assets/media/lib into Cerebellum.",
+    "Never use cross-source question repetition as subject ownership evidence.",
+    "Never force-map the 2066 unresolved PYQs.",
+    "Never fabricate Gradle files, Activities, Manifest entries, package IDs or native architecture."
+  ],
+  "status": "CEREBELLUM_NATIVE_IDENTITY_KNOWN_BUT_SOURCE_MATERIALIZATION_REQUIRED"
+}
