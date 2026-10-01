@@ -1,0 +1,32 @@
+{
+  "project": "Cerebellum reconstruction",
+  "checked_at": "2026-10-01",
+  "contamination_policy": "CEREBELLUM_ONLY",
+  "verified_external_identity": {
+    "official_google_play_package": "com.cerebellummobileapp",
+    "source": "Google Play Cerebellum Academy listing"
+  },
+  "recovered_native_layer": {
+    "path": "reconstruction/apk_root",
+    "observed_package": "com.marrow",
+    "observed_launcher": "com.marrow.ui.activities.onboarding.splash.SplashActivity",
+    "classification": "MARROW_CONTAMINATION",
+    "allowed_for_cerebellum_integration": false
+  },
+  "pyq_layer": {
+    "questions": 9354,
+    "mapped": 7288,
+    "unresolved": 2066,
+    "ambiguous": 0,
+    "subjects": 19,
+    "years": "2015-2025"
+  },
+  "enforced_rules": [
+    "Do not copy Marrow DEX/resources/assets/media/lib into Cerebellum.",
+    "Do not inject Cerebellum QBank into reconstruction/apk_root while package identity is com.marrow.",
+    "Do not infer Cerebellum native host from filename or repository name.",
+    "Only a verified Cerebellum native artifact/package may become the integration host.",
+    "Cross-source question repetition is not subject ownership evidence."
+  ],
+  "status": "CEREBELLUM_NATIVE_HOST_MISSING_CONTAMINATION_BLOCK_ACTIVE"
+}
