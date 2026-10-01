@@ -261,18 +261,6 @@ jobs:
           assert dst.stat().st_size == src.stat().st_size
           print(json.dumps(manifest,indent=2))
           PY
-      - name: Validate recovered APK asset injection
-        run: |
-          test -s reconstruction/apk_root/assets/cerebellum_pyq_qbank.html
-          test -s reconstruction/analysis/pyq_apk_asset_manifest.json
-          cmp reconstruction/generated/pyq/qbank_ready/cerebellum_pyq_qbank.html reconstruction/apk_root/assets/cerebellum_pyq_qbank.html
-          python3 - <<'PY'
-          import json
-          m=json.load(open('reconstruction/analysis/pyq_apk_asset_manifest.json'))
-          assert m['status'] in ('ASSET_LAYER_STAGED','STAGED_IN_RECOVERED_APK_ROOT'),m
-          assert m['records']==9354,m
-          print('Recovered APK asset injection PASS:',m['bytes'],'bytes')
-          PY
       - name: Stage generated PYQ QBank into recovered APK asset layer
         run: |
           test -s reconstruction/generated/pyq/qbank_ready/cerebellum_pyq_qbank.html
@@ -297,6 +285,18 @@ jobs:
           test -s reconstruction/apk_root/assets/cerebellum_pyq_qbank.html
           test -s reconstruction/analysis/pyq_apk_asset_manifest.json
 
+      - name: Validate recovered APK asset injection
+        run: |
+          test -s reconstruction/apk_root/assets/cerebellum_pyq_qbank.html
+          test -s reconstruction/analysis/pyq_apk_asset_manifest.json
+          cmp reconstruction/generated/pyq/qbank_ready/cerebellum_pyq_qbank.html reconstruction/apk_root/assets/cerebellum_pyq_qbank.html
+          python3 - <<'PY'
+          import json
+          m=json.load(open('reconstruction/analysis/pyq_apk_asset_manifest.json'))
+          assert m['status'] in ('ASSET_LAYER_STAGED','STAGED_IN_RECOVERED_APK_ROOT'),m
+          assert m['records']==9354,m
+          print('Recovered APK asset injection PASS:',m['bytes'],'bytes')
+          PY
       - name: Stage native integration handoff
         run: |
           python3 - <<'PY'
