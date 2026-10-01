@@ -238,6 +238,41 @@ jobs:
           print('QBank UI validation PASS:',len(d),'records; remote media dependencies:',len(remote_imgs),'unique URLs:',audit['unique_remote_images'])
           PY
 
+      - name: Inject verified PYQ QBank into recovered APK asset layer
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, hashlib
+          src=pathlib.Path('reconstruction/generated/pyq/qbank_ready/cerebellum_pyq_qbank.html')
+          apk_assets=pathlib.Path('reconstruction/apk_root/assets')
+          apk_assets.mkdir(parents=True,exist_ok=True)
+          dst=apk_assets/'cerebellum_pyq_qbank.html'
+          dst.write_bytes(src.read_bytes())
+          manifest={
+            'status':'STAGED_IN_RECOVERED_APK_ROOT',
+            'source':str(src),
+            'target':str(dst),
+            'sha256':hashlib.sha256(dst.read_bytes()).hexdigest(),
+            'bytes':dst.stat().st_size,
+            'records':9354,
+            'note':'Recovered APK asset-layer injection only; final rebuilt APK/install/runtime verification remains a separate gate.'
+          }
+          p=pathlib.Path('reconstruction/analysis/pyq_apk_asset_manifest.json')
+          p.write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
+          assert dst.stat().st_size == src.stat().st_size
+          print(json.dumps(manifest,indent=2))
+          PY
+      - name: Validate recovered APK asset injection
+        run: |
+          test -s reconstruction/apk_root/assets/cerebellum_pyq_qbank.html
+          test -s reconstruction/analysis/pyq_apk_asset_manifest.json
+          cmp reconstruction/generated/pyq/qbank_ready/cerebellum_pyq_qbank.html reconstruction/apk_root/assets/cerebellum_pyq_qbank.html
+          python3 - <<'PY'
+          import json
+          m=json.load(open('reconstruction/analysis/pyq_apk_asset_manifest.json'))
+          assert m['status']=='STAGED_IN_RECOVERED_APK_ROOT',m
+          assert m['records']==9354,m
+          print('Recovered APK asset injection PASS:',m['bytes'],'bytes')
+          PY
       - name: Stage native integration handoff
         run: |
           python3 - <<'PY'
