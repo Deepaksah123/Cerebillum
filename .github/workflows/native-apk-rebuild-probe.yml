@@ -1,0 +1,54 @@
+name: Cerebellum Native APK Rebuild Probe
+
+on:
+  push:
+    branches: [cerebellum-pyq-phase1]
+    paths:
+      - 'reconstruction/apk_root/**'
+      - 'reconstruction/analysis/native_archive_recovery_audit.json'
+      - '.github/workflows/native-apk-rebuild-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install APK reconstruction toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apktool
+          apktool --version
+      - name: Probe recovered APK root
+        id: probe
+        continue-on-error: true
+        run: |
+          mkdir -p reconstruction/native_probe
+          apktool b reconstruction/apk_root -o reconstruction/native_probe/cerebellum_rebuild_probe.apk 2>&1 | tee reconstruction/native_probe/apktool_build.log
+      - name: Record rebuild result
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, hashlib, re
+          log=pathlib.Path('reconstruction/native_probe/apktool_build.log')
+          apk=pathlib.Path('reconstruction/native_probe/cerebellum_rebuild_probe.apk')
+          txt=log.read_text(errors='replace') if log.exists() else ''
+          result={
+            'apktool_build_output_exists':apk.exists(),
+            'apktool_build_output_bytes':apk.stat().st_size if apk.exists() else 0,
+            'apktool_build_output_sha256':hashlib.sha256(apk.read_bytes()).hexdigest() if apk.exists() else None,
+            'build_error_signatures':re.findall(r'(?i)(?:error|exception|failed|cannot|unknown)[^\n]{0,240}',txt)[-50:],
+            'status':'REBUILD_PROBE_PASS' if apk.exists() and apk.stat().st_size>0 else 'REBUILD_PROBE_FAILED'
+          }
+          pathlib.Path('reconstruction/analysis/native_rebuild_probe.json').write_text(json.dumps(result,indent=2))
+          print(json.dumps(result,indent=2))
+          PY
+      - name: Persist rebuild probe
+        run: |
+          git config user.name "cerebellum-pyq-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reconstruction/analysis/native_rebuild_probe.json reconstruction/native_probe/apktool_build.log
+          git diff --cached --quiet || git commit -m "Persist native APK rebuild probe"
+          git push
