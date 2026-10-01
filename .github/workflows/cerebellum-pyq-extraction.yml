@@ -141,6 +141,70 @@ jobs:
           } for r in recs],open(out/'qbank_records.json','w'),ensure_ascii=False,indent=2)
           print(json.dumps(index,indent=2))
           PY
+      - name: Build standalone interactive PYQ QBank HTML
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, html
+          base=pathlib.Path('reconstruction/generated/pyq')
+          recs=json.load(open(base/'pyq_records.json'))
+          out=base/'qbank_ready'; out.mkdir(parents=True,exist_ok=True)
+          data=[]
+          for r in recs:
+              s=r.get('source_record') or {}
+              choices=s.get('choices') or []
+              data.append({
+                'id':s.get('id'),'year':r.get('year'),
+                'subject':(r.get('subject_candidates') or [None])[0],
+                'status':r.get('classification_status'),
+                'text':s.get('text') or '',
+                'choices':choices,
+                'correct_choice_id':s.get('correct_choice_id'),
+                'solution':s.get('solution') or '',
+                'question_images':s.get('question_images') or [],
+                'explanation_images':s.get('explanation_images') or []
+              })
+          payload=json.dumps(data,ensure_ascii=False,separators=(',',':')).replace('</script>','<\\/script>')
+          template=r'''<!doctype html>
+          <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+          <title>Cerebellum PYQ QBank</title>
+          <style>
+          :root{--bg:#f5f7fa;--card:#fff;--text:#17202a;--muted:#68707a;--border:#dfe3e8;--accent:#2563eb;--ok:#16803c;--bad:#c62828}
+          *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+          header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--border);padding:12px}
+          h1{font-size:18px;margin:0 0 10px}.bar{display:flex;gap:8px;flex-wrap:wrap}.bar select,.bar button{padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text)}
+          main{max-width:900px;margin:auto;padding:12px}.meta{color:var(--muted);font-size:13px;margin:8px 0}.q{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin:12px 0}
+          .qno{font-size:12px;color:var(--muted);margin-bottom:8px}.question{font-size:16px;line-height:1.55}.opt{display:block;width:100%;text-align:left;margin:8px 0;padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--card);color:var(--text)}
+          .opt.correct{border-color:var(--ok);background:#eaf7ee}.opt.wrong{border-color:var(--bad);background:#fdecec}.locked .opt{cursor:default}
+          .actions{display:flex;gap:8px;margin-top:10px}.actions button{padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card)}
+          .solution{display:none;margin-top:10px;padding:10px;border-top:1px solid var(--border);white-space:pre-wrap;line-height:1.5}.solution.show{display:block}
+          .empty{padding:30px;text-align:center;color:var(--muted)}
+          @media(prefers-color-scheme:dark){:root{--bg:#101214;--card:#181b1f;--text:#eef1f4;--muted:#9aa3ad;--border:#30353b;--accent:#6ea8fe}.opt.correct{background:#12331e}.opt.wrong{background:#3b1717}}
+          </style></head><body>
+          <header><h1>Cerebellum PYQ QBank</h1><div class="bar">
+          <select id="subject"><option value="">All subjects</option></select><select id="year"><option value="">All years</option></select>
+          <select id="mode"><option value="all">All questions</option><option value="mapped">Mapped only</option><option value="unresolved">Unresolved audit</option></select>
+          <button id="shuffle">Shuffle</button></div><div id="meta" class="meta"></div></header>
+          <main id="app"></main>
+          <script id="DATA" type="application/json">''' + payload + r'''</script>
+          <script>
+          const DATA=JSON.parse(document.getElementById('DATA').textContent);let rows=[...DATA];
+          const S=[...new Set(DATA.map(x=>x.subject).filter(Boolean))].sort(),Y=[...new Set(DATA.map(x=>x.year).filter(Boolean))].sort();
+          const sub=document.getElementById('subject'),yr=document.getElementById('year'),mode=document.getElementById('mode'),app=document.getElementById('app'),meta=document.getElementById('meta');
+          S.forEach(x=>sub.insertAdjacentHTML('beforeend','<option>'+esc(x)+'</option>'));Y.forEach(x=>yr.insertAdjacentHTML('beforeend','<option>'+esc(x)+'</option>'));
+          function esc(x){return String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+          function choiceText(c){return c&&typeof c==='object'?(c.text??c.value??c.label??''):String(c??'')}
+          function filter(){rows=DATA.filter(r=>(!sub.value||r.subject===sub.value)&&(!yr.value||r.year===yr.value)&&(mode.value==='all'||(mode.value==='mapped'?!!r.subject:!r.subject)));meta.textContent=rows.length+' questions';render()}
+          function render(){app.innerHTML=rows.length?rows.map((r,i)=>card(r,i)).join(''):'<div class="empty">No questions in this filter.</div>'}
+          function card(r,i){return '<section class="q" id="q'+i+'"><div class="qno">Q'+(i+1)+' · '+esc(r.year||'')+(r.subject?' · '+esc(r.subject):' · UNRESOLVED')+'</div><div class="question">'+r.text+'</div><div class="opts">'+(r.choices||[]).map((c,j)=>'<button class="opt" data-id="'+esc(c.id)+'" onclick="pick('+i+',this)">'+String.fromCharCode(65+j)+'. '+choiceText(c)+'</button>').join('')+'</div><div class="actions"><button onclick="toggleSol('+i+')">Show / Hide Explanation</button></div><div class="solution" id="s'+i+'">'+(r.solution||'No explanation supplied in source record.')+'</div></section>'}
+          function pick(i,b){const r=rows[i],q=document.getElementById('q'+i);if(q.classList.contains('locked'))return;q.classList.add('locked');q.querySelectorAll('.opt').forEach(x=>{if(String(x.dataset.id)===String(r.correct_choice_id))x.classList.add('correct')});if(String(b.dataset.id)!==String(r.correct_choice_id))b.classList.add('wrong')}
+          function toggleSol(i){document.getElementById('s'+i).classList.toggle('show')}
+          sub.onchange=yr.onchange=mode.onchange=filter;
+          document.getElementById('shuffle').onclick=()=>{rows=[...rows].sort(()=>Math.random()-.5);render()};
+          filter();
+          </script></body></html>'''
+          (out/'cerebellum_pyq_qbank.html').write_text(template,encoding='utf-8')
+          print('Generated',out/'cerebellum_pyq_qbank.html','records=',len(data))
+          PY
       - name: Persist latest audit
         run: |
           cp reconstruction/generated/pyq/pyq_audit.json reconstruction/analysis/pyq_latest_audit.json
