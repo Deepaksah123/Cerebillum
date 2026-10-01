@@ -22,7 +22,7 @@ if apk.exists():
     for p in apk.rglob("*"):
         if p.is_file():
             s=str(p)
-            if re.search(r"\\.(?:java|kt|smali|gradle|kts)$",s,re.I) or p.name in {"build.gradle","settings.gradle","apktool.yml"}:
+            if re.search(r"\\.(?:java|kt|smali|gradle|kts|aidl)$",s,re.I) or p.name in {"build.gradle","build.gradle.kts","settings.gradle","settings.gradle.kts","gradlew","gradle.properties","apktool.yml"}:
                 apk_paths.append(s)
 result={
  "archive_inventory":summ,
