@@ -108,6 +108,38 @@ jobs:
           assert index['mapped_records'] + index['unresolved_records'] == len(records), index
           print(json.dumps(index,indent=2))
           PY
+      - name: Build QBank-ready normalized packages
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, re, hashlib
+          base=pathlib.Path('reconstruction/generated/pyq')
+          recs=json.load(open(base/'pyq_records.json'))
+          out=base/'qbank_ready'; out.mkdir(parents=True,exist_ok=True)
+          subjects=sorted({(r.get('subject_candidates') or [None])[0] for r in recs if len(r.get('subject_candidates') or [])==1})
+          index={'records':len(recs),'mapped':0,'unresolved':0,'subjects':{},'validation':{'correct_choice_mismatch':0,'choice_count_distribution':{}}}
+          for r in recs:
+              cands=r.get('subject_candidates') or []
+              if len(cands)==1:
+                  index['mapped']+=1
+                  subj=cands[0]; index['subjects'][subj]=index['subjects'].get(subj,0)+1
+              else: index['unresolved']+=1
+              choices=r.get('choices') or []
+              n=len(choices); index['validation']['choice_count_distribution'][str(n)]=index['validation']['choice_count_distribution'].get(str(n),0)+1
+              ids={str(x.get('id')) for x in choices if isinstance(x,dict) and x.get('id') is not None}
+              cid=str(r.get('correct_choice_id'))
+              if cid not in ids: index['validation']['correct_choice_mismatch']+=1
+          assert index['mapped']+index['unresolved']==len(recs), index
+          assert index['validation']['correct_choice_mismatch']==0, index
+          json.dump(index,open(out/'qbank_ready_manifest.json','w'),ensure_ascii=False,indent=2)
+          json.dump([{
+              'id':r.get('id'),'year':r.get('year'),'subject':(r.get('subject_candidates') or [None])[0],
+              'text':r.get('text'),'choices':r.get('choices'),'correct_choice_id':r.get('correct_choice_id'),
+              'solution':r.get('solution'),'question_images':r.get('question_images'),
+              'explanation_images':r.get('explanation_images'),'source_file':r.get('source_file'),
+              'source_index':r.get('source_index'),'classification_status':r.get('classification_status')
+          } for r in recs],open(out/'qbank_records.json','w'),ensure_ascii=False,indent=2)
+          print(json.dumps(index,indent=2))
+          PY
       - name: Persist latest audit
         run: |
           cp reconstruction/generated/pyq/pyq_audit.json reconstruction/analysis/pyq_latest_audit.json
