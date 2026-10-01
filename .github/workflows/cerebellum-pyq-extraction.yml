@@ -238,6 +238,38 @@ jobs:
           print('QBank UI validation PASS:',len(d),'records; remote media dependencies:',len(remote_imgs),'unique URLs:',audit['unique_remote_images'])
           PY
 
+      - name: Stage native integration handoff
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, hashlib
+          base=pathlib.Path('reconstruction/generated/pyq/qbank_ready')
+          html=base/'cerebellum_pyq_qbank.html'
+          stage=pathlib.Path('reconstruction/generated/pyq/native_integration_handoff/assets')
+          stage.mkdir(parents=True,exist_ok=True)
+          target=stage/'cerebellum_pyq_qbank.html'
+          target.write_bytes(html.read_bytes())
+          manifest={
+            'status':'PENDING_NATIVE_SOURCE',
+            'source_artifact':'reconstruction/generated/pyq/qbank_ready/cerebellum_pyq_qbank.html',
+            'staged_asset':'native_integration_handoff/assets/cerebellum_pyq_qbank.html',
+            'sha256':hashlib.sha256(target.read_bytes()).hexdigest(),
+            'records':9354,
+            'note':'Staging only. No Android source tree is present in the recovered branch, so this is not APK integration.'
+          }
+          (stage.parent/'native_integration_manifest.json').write_text(json.dumps(manifest,indent=2),encoding='utf-8')
+          print(json.dumps(manifest,indent=2))
+          PY
+      - name: Validate native integration handoff
+        run: |
+          test -s reconstruction/generated/pyq/native_integration_handoff/assets/cerebellum_pyq_qbank.html
+          test -s reconstruction/generated/pyq/native_integration_handoff/native_integration_manifest.json
+          python3 - <<'PY'
+          import json
+          m=json.load(open('reconstruction/generated/pyq/native_integration_handoff/native_integration_manifest.json'))
+          assert m['status']=='PENDING_NATIVE_SOURCE',m
+          assert m['records']==9354,m
+          print('Native integration handoff PASS; APK integration remains pending native source.')
+          PY
       - name: Persist latest audit
         run: |
           cp reconstruction/generated/pyq/pyq_audit.json reconstruction/analysis/pyq_latest_audit.json
