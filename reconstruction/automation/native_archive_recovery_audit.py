@@ -30,8 +30,8 @@ result={
  "source_like_member_count":len(all_hits),
  "extracted_apk_source_files":apk_paths[:500],
  "extracted_apk_source_file_count":len(apk_paths),
- "rebuildable_android_source_found":bool(all_hits or apk_paths),
- "note":"Archive membership is evidence only; source-like filenames must still be inspected for actual rebuildability."
+ "rebuildable_android_source_found":bool(any(re.search(r"(?:^|/)(?:build\\.gradle(?:\\.kts)?|settings\\.gradle(?:\\.kts)?|gradlew|gradle\\.properties)$",x,re.I) for _,x in all_hits) or apk_paths),
+ "note":"XML/resource members alone are not rebuildable Android source. Rebuildability requires Gradle project files or actual Java/Kotlin/Smali source in a verified native identity tree."
 }
 pathlib.Path("reconstruction/analysis/native_archive_recovery_audit.json").write_text(json.dumps(result,indent=2))
 print(json.dumps(result,indent=2))
