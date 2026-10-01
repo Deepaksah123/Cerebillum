@@ -1,0 +1,49 @@
+{
+  "project": "Cerebellum reconstruction",
+  "branch": "cerebellum-pyq-phase1",
+  "checked_at": "2026-10-01",
+  "batch": "parallel-native-host-recovery-v2",
+  "provenance": "Cerebellum-only. Native identity comes from the user's Library forensic artifacts for base (1).apk / base (1).apk_Decompiler.com.zip; no Marrow source/content was used.",
+  "verified_cerebellum_native_host": {
+    "package": "com.cerebellummobileapp",
+    "version": "1.16.2",
+    "version_code": 172,
+    "main_activity": "com.cerebellummobileapp.MainActivity",
+    "react_native": true,
+    "hermes": true,
+    "new_architecture": true,
+    "main_component": "cerebellumMobileApp",
+    "js_bundle": "assets/index.android.bundle",
+    "min_sdk": 26,
+    "target_sdk": 36,
+    "evidence": "Cerebellum_Decompiler_Forensic_Report.md + GROUND_TRUTH_UI_MAP.md + Cerebellum APK exact path tree"
+  },
+  "verified_native_capability": {
+    "decompiler_entries": 46647,
+    "decoded_manifest": true,
+    "smali_files": "22000+",
+    "jadx_sources": true,
+    "decoded_resources": true,
+    "app_assets": true
+  },
+  "pyq_layer": {
+    "source_files": 41,
+    "questions": 9354,
+    "mapped": 7288,
+    "unresolved": 2066,
+    "ambiguous": 0,
+    "subjects": 19,
+    "years": "2015-2025",
+    "qbank_html_generated_and_validated": true
+  },
+  "contamination_guard": {
+    "marrows_recovered_apk_root_is_not_allowed": true,
+    "marrows_package": "com.marrow",
+    "cerebellum_package_required": "com.cerebellummobileapp",
+    "cross_source_duplication_not_subject_evidence": true,
+    "unresolved_not_force_mapped": true
+  },
+  "current_integration_status": "NATIVE_HOST_IDENTIFIED_FROM_VERIFIED_CEREBELLUM_FORENSIC_EVIDENCE_BUT_NATIVE_SOURCE_BYTES_ARE_NOT_PRESENT_IN_CEREBILLUM_REPO",
+  "safe_next_step": "Recover or materialize the verified Cerebellum decompiler source tree (MainActivity/MainApplication/manifest/resources/smali) into the Cerebellum reconstruction workspace, preserving original evidence, then create the native build project without importing Marrow. Only after that should the PYQ QBank HTML be inserted into the verified Cerebellum asset/content layer.",
+  "prohibited": "Do not use reconstruction/apk_root as the host; its identity is com.marrow and the contamination gate must remain blocking."
+}
