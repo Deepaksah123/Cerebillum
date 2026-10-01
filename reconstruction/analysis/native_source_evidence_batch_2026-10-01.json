@@ -1,42 +1,46 @@
 {
-  "project":"Cerebellum reconstruction",
-  "checked_at":"2026-10-01",
-  "recovered_apk_layer":{
-    "verified_path":"reconstruction/apk_root",
-    "verified_manifest_path":"reconstruction/apk_root/manifest/AndroidManifest.xml",
-    "manifest_blob_sha":"e4dc151bb89c4f5da233599c42ce17bd238d24c0",
-    "historical_build_commit":"75f8037a128ca2bc5c53b36de3115d71c33c044e",
-    "historical_coexist_commit":"59838cd77e3e100432f7c1b914f048c890ca26b0",
-    "historical_manifest_fix_commit":"81e221c629b164b07e3704b36f449df70550504b",
-    "historical_package_regex_fix_commit":"35872cc48f1ceba110e7c14e47d927c5fe3fc7a2",
-    "historical_build_run":"36763675150",
-    "historical_apk_size_bytes":53707265,
-    "historical_apk_sha256":"cfc3a79cb9ce06f5f38e740074120c120196c811e12e952d8ab64de01d579dbc",
-    "installation_status":"NOT_RUNTIME_VERIFIED"
+  "project": "Cerebellum reconstruction",
+  "checked_at": "2026-10-01",
+  "recovered_native_layer": {
+    "path": "reconstruction/apk_root",
+    "package": "com.marrow",
+    "identity_status": "MARROW_CONTAMINATION_NOT_CEREBELLUM",
+    "cerebellum_integration_allowed": false
   },
-  "pyq_layer":{
-    "source_files":41,"questions":9354,"mapped":7288,"unresolved":2066,"ambiguous":0,
-    "subjects":19,"years":"2015-2025",
-    "native_asset_injection_workflow":true,
-    "native_asset_injection_commit":"1f7bfb0c1793b2421e742c76d433d6f12e8dd4a2",
-    "asset_target":"reconstruction/apk_root/assets/cerebellum_pyq_qbank.html",
-    "apk_build_after_injection":"PENDING_VERIFICATION"
+  "verified_cerebellum_identity": {
+    "package": "com.cerebellummobileapp",
+    "evidence": "Official Google Play listing"
   },
-  "media":{"remote_image_references":7491,"unique_remote_urls":7399,"embedded":0,"standalone_ready":false},
-  "current_gate":{
-    "content_pipeline":"VERIFIED",
-    "recovered_apk_root":"VERIFIED",
-    "pyq_asset_injection":"AUTOMATED",
-    "rebuilt_apk_containing_pyq":"PENDING",
-    "runtime_qbank_verification":"PENDING",
-    "coexistence_installation_proof":"PENDING"
+  "pyq_layer": {
+    "source_files": 41,
+    "questions": 9354,
+    "mapped": 7288,
+    "unresolved": 2066,
+    "ambiguous": 0,
+    "subjects": 19,
+    "years": "2015-2025"
   },
-  "next_parallel_execution":[
-    "verify asset-injection workflow output",
-    "locate and rerun historical APK build workflow after PYQ asset injection",
-    "reconcile APK manifest/package identity and coexistence checks",
-    "source-vs-asset hash/count reconciliation",
-    "keep 2066 unresolved questions unresolved unless explicit subject evidence appears"
+  "media": {
+    "remote_image_references": 7491,
+    "unique_remote_urls": 7399,
+    "embedded": 0,
+    "standalone_ready": false
+  },
+  "current_gate": {
+    "content_pipeline": "VERIFIED",
+    "recovered_apk_root": "CONTAMINATED_MARROW_LAYER",
+    "pyq_asset_injection_into_apk_root": "BLOCKED",
+    "correct_cerebellum_native_host": "NOT_FOUND",
+    "rebuilt_cerebellum_apk": "PENDING",
+    "runtime_qbank_verification": "PENDING",
+    "coexistence_installation_proof": "PENDING"
+  },
+  "next_safe_execution": [
+    "Keep Marrow native layer quarantined.",
+    "Find or obtain the actual Cerebellum APK/native host with package com.cerebellummobileapp.",
+    "Verify its manifest, launcher Activity, assets/content-loading path and source/decompiler evidence.",
+    "Only then integrate the already-validated Cerebellum PYQ QBank.",
+    "Do not force-map the 2066 unresolved PYQs."
   ],
-  "prohibition":"Do not claim final APK integration/build/runtime/coexistence until each evidence gate passes."
+  "contamination_policy": "CEREBELLUM_ONLY"
 }
