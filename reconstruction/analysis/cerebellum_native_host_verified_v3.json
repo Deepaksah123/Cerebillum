@@ -1,0 +1,73 @@
+{
+  "project": "Cerebellum reconstruction",
+  "branch": "cerebellum-pyq-phase1",
+  "source": "/base (1).apk_Decompiler.com.zip",
+  "archive_size_bytes": 104477964,
+  "archive_entries": 46647,
+  "verified_native_host": {
+    "package": "com.cerebellummobileapp",
+    "main_activity": "com.cerebellummobileapp.MainActivity",
+    "application_class": "com.cerebellummobileapp.MainApplication",
+    "react_native": true,
+    "hermes": true,
+    "new_architecture": true,
+    "main_component": "cerebellumMobileApp",
+    "bundle_path": "resources/assets/index.android.bundle"
+  },
+  "selected_verified_files": [
+    {
+      "path": "resources/AndroidManifest.xml",
+      "bytes": 41228,
+      "sha256": "249d2276fc75f23c6bd310f3c0da5bcbbf0ea48ffa3e31539045e0eae718c098"
+    },
+    {
+      "path": "sources/com/cerebellummobileapp/MainActivity.java",
+      "bytes": 6595,
+      "sha256": "ad76fc26e28b589bbcf75b2102851a91bab607018a3e57fd44efb9d0a74906f4"
+    },
+    {
+      "path": "sources/com/cerebellummobileapp/MainApplication.java",
+      "bytes": 4785,
+      "sha256": "6112da8da95b211d3c660b165f43a48c9204d0586230b13e8ee3eb7bdcc0c029"
+    },
+    {
+      "path": "smali/com/cerebellummobileapp/MainActivity.smali",
+      "bytes": 12874,
+      "sha256": "da10a32b4f0c92c2d3964225eefb0cf564d191650d21a78ae423d72fff9a7c61"
+    },
+    {
+      "path": "smali/com/cerebellummobileapp/MainApplication.smali",
+      "bytes": 10292,
+      "sha256": "819f169ad8beabfc50eb9abbf91a13cc87038d053dbc8df40cedb8188ddd052b"
+    },
+    {
+      "path": "resources/assets/index.android.bundle",
+      "bytes": 11206868,
+      "sha256": "d0e2d33a709316ae8fc55afd24b2540f6ab50e72ab2a9dbcaac419731be5afe2"
+    }
+  ],
+  "native_behavior_verified": {
+    "MainActivity": "ReactActivity; component cerebellumMobileApp; New Architecture delegate; picture-in-picture handling",
+    "MainApplication": "DefaultReactNativeHost; Hermes=true; New Architecture=true; PackageList plus Cerebellum native packages; HotUpdater JS bundle override"
+  },
+  "buildability": {
+    "original_decompiler_source_available": true,
+    "standalone_gradle_project_inside_decompiler_archive": false,
+    "conclusion": "Native host is now verified; a rebuildable project still has to be reconstructed from verified Cerebellum source/evidence."
+  },
+  "pyq_integration_gate": {
+    "qbank_records": 9354,
+    "mapped": 7288,
+    "unresolved": 2066,
+    "ambiguous": 0,
+    "html_validated": true,
+    "media_embedded": 0,
+    "status": "READY_FOR_HOST_WIRING_AFTER_BUILD_PROJECT_RECOVERY"
+  },
+  "contamination": {
+    "allowed_source_identity": "com.cerebellummobileapp",
+    "blocked_repo_native_root": "reconstruction/apk_root",
+    "blocked_identity": "com.marrow",
+    "status": "PASS_CEREBELLUM_SOURCE_ISOLATED"
+  }
+}
