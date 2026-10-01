@@ -96,3 +96,5 @@ jobs:
             reconstruction/native_assembly/extended_signed.apk
             reconstruction/native_assembly/*_badging.txt
             reconstruction/analysis/native_apk_assembly_probe.json
+
+# rerun after verified QBank asset persistence
