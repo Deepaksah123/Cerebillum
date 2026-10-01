@@ -78,7 +78,7 @@ canonical_id_to_subject={sid:subs for sid,subs in canonical_id_to_subject.items(
 canonical_subject_by_id={sid:subs[0] for sid,subs in canonical_id_to_subject.items()}
 
 summary=defaultdict(lambda:{"files":0,"questions":0,"subject_id_mapped":0,"canonical_subject_id_mapped":0,
-                            "qbank_id_mapped":0,"qbank_unique_key_mapped":0,"qbank_map_id_mapped":0,
+                            "qbank_id_mapped":0,"qbank_unique_key_mapped":0,"qbank_map_id_mapped":0,"qbank_choice_id_mapped":0,
                             "exact_mapped":0,"subject_mapped":0,"unresolved":0,"ambiguous":0})
 records=[]
 
