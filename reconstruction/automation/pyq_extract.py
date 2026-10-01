@@ -29,6 +29,7 @@ subject_id_counts_by_subject=defaultdict(Counter)
 qbank_id_to_subject=defaultdict(set)
 qbank_unique_key_to_subject=defaultdict(set)
 qbank_map_id_to_subject=defaultdict(set)
+qbank_choice_id_to_subject=defaultdict(set)
 exact=defaultdict(set)
 
 for p in QB.rglob("*.json"):
@@ -54,6 +55,10 @@ for p in QB.rglob("*.json"):
         if uk: qbank_unique_key_to_subject[str(uk)].add(subject)
         mid=to_int(row.get("map_id"))
         if mid is not None: qbank_map_id_to_subject[mid].add(subject)
+        for choice in row.get("choices") or []:
+            if isinstance(choice,dict):
+                cid=to_int(choice.get("id"))
+                if cid is not None: qbank_choice_id_to_subject[cid].add(subject)
 
         q=row.get("question") or row.get("question_text") or row.get("text")
         k=norm(q)
@@ -141,7 +146,20 @@ for p in sorted(PYQ.rglob("*.json")):
                         evidence="source.map_id -> qBank.map_id exact match"
                         summary[year]["qbank_map_id_mapped"]+=1
                     else:
-                        subjects=sorted(exact.get(norm(q),set()))
+                        choice_subjects=set()
+                        for choice in row.get("choices") or []:
+                            if isinstance(choice,dict):
+                                cid=to_int(choice.get("id"))
+                                if cid is not None: choice_subjects.update(qbank_choice_id_to_subject.get(cid,set()))
+                        correct_cid=to_int(row.get("correct_choice_id"))
+                        correct_subjects=qbank_choice_id_to_subject.get(correct_cid,set()) if correct_cid is not None else set()
+                        if len(choice_subjects)==1 and (not correct_subjects or correct_subjects==choice_subjects):
+                            subjects=sorted(choice_subjects)
+                            status="MAPPED_QBANK_CHOICE_ID"
+                            evidence="source.choices[].id -> qBank.choices[].id exact subject linkage"
+                            summary[year]["qbank_choice_id_mapped"]+=1
+                        else:
+                            subjects=sorted(exact.get(norm(q),set()))
                         if len(subjects)==1:
                             status="MAPPED_EXACT"
                             evidence="unique exact normalized question text -> qBank subject"
@@ -184,6 +202,7 @@ audit={
     "mapped_qbank_id":sum(v["qbank_id_mapped"] for v in summary.values()),
     "mapped_qbank_unique_key":sum(v["qbank_unique_key_mapped"] for v in summary.values()),
     "mapped_qbank_map_id":sum(v["qbank_map_id_mapped"] for v in summary.values()),
+    "mapped_qbank_choice_id":sum(v["qbank_choice_id_mapped"] for v in summary.values()),
     "mapped_exact":sum(v["exact_mapped"] for v in summary.values()),
     "mapped_total":sum(v["subject_mapped"] for v in summary.values()),
     "ambiguous_exact":sum(v["ambiguous"] for v in summary.values()),
@@ -192,9 +211,10 @@ audit={
     "qbank_id_index_entries":len(qbank_id_to_subject),
     "qbank_unique_key_index_entries":len(qbank_unique_key_to_subject),
     "qbank_map_id_index_entries":len(qbank_map_id_to_subject),
+    "qbank_choice_id_index_entries":len(qbank_choice_id_to_subject),
     "canonical_subject_count":len(canonical_subject_by_id),
     "canonical_subject_by_id":{str(k):v for k,v in sorted(canonical_subject_by_id.items())},
-    "policy":"Use explicit source subjects_id first. If absent/unusable, use exact source id/unique_key/map_id linkage to qBank records only when the linkage resolves to exactly one qBank subject folder. Then use unique exact normalized question text. Never infer subject from question content."
+    "policy":"Use explicit source subjects_id first. If absent/unusable, use exact source id/unique_key/map_id/choice-id linkage to qBank records only when the linkage resolves to exactly one qBank subject folder. Then use unique exact normalized question text. Never infer subject from question content."
 }
 
 (Path(OUT/"pyq_records.json")).write_text(json.dumps(records,ensure_ascii=False,indent=2),encoding="utf-8")
