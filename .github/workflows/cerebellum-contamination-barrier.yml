@@ -57,3 +57,18 @@ jobs:
           test -d app/src/main/java/com/cerebellummobileapp
           test -f app/src/main/AndroidManifest.xml
           grep -q 'com.cerebellummobileapp' app/src/main/AndroidManifest.xml
+
+
+      - name: Scan tracked tree and workflow text for resurrection
+        shell: bash
+        run: |
+          set -euo pipefail
+          tracked="$(git ls-files)"
+          if printf '%s\n' "$tracked" | grep -E '^(reconstruction/apk_root/|reconstruction/analysis/(batches|deep)/|reconstruction/analysis/(ORGANIZATION_MANIFEST|ORGANIZED_FILE_LIST|ORGANIZED_SHA256))'; then
+            echo "FORBIDDEN LEGACY PATH TRACKED"
+            exit 1
+          fi
+          if grep -RniE 'reconstruction/apk_root|reconstruction/analysis/(batches|deep)|ORGANIZATION_MANIFEST|ORGANIZED_FILE_LIST|ORGANIZED_SHA256' .github/workflows; then
+            echo "WORKFLOW RESURRECTION REFERENCE DETECTED"
+            exit 1
+          fi
