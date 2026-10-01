@@ -410,3 +410,5 @@ print(json.dumps(audit,indent=2))
 # Native integration handoff staging is validated by the workflow after QBank generation.
 
 # Native integration handoff verification trigger 2026-10-01
+
+# native assembly trigger: deterministic recovered-APK asset staging pipeline
