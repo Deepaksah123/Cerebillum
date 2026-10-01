@@ -23,7 +23,6 @@ def load_json(p):
         with p.open(encoding="utf-8") as f: return json.load(f)
     except Exception: return None
 
-# Build source-derived indexes from Cerebellum qBank.
 subject_id_to_subject=defaultdict(set)
 subject_id_counts_by_subject=defaultdict(Counter)
 qbank_id_to_subject=defaultdict(set)
@@ -41,14 +40,10 @@ for p in QB.rglob("*.json"):
     subject=rel.parts[0] if rel.parts else p.parent.name
     for row in rows:
         if not isinstance(row,dict): continue
-        sids=[]
-        for sid in row.get("subjects_id") or []:
-            n=to_int(sid)
-            if n is not None: sids.append(n)
+        sids=[n for sid in (row.get("subjects_id") or []) if (n:=to_int(sid)) is not None]
         for sid in sids:
             subject_id_to_subject[sid].add(subject)
             subject_id_counts_by_subject[subject][sid]+=1
-
         rid=to_int(row.get("id"))
         if rid is not None: qbank_id_to_subject[rid].add(subject)
         uk=row.get("unique_key")
@@ -59,23 +54,49 @@ for p in QB.rglob("*.json"):
             if isinstance(choice,dict):
                 cid=to_int(choice.get("id"))
                 if cid is not None: qbank_choice_id_to_subject[cid].add(subject)
-
-        q=row.get("question") or row.get("question_text") or row.get("text")
-        k=norm(q)
+        k=norm(row.get("question") or row.get("question_text") or row.get("text"))
         if k and len(k)>=20: exact[k].add(subject)
 
-# A canonical subject ID is accepted only when a folder has a unique ID
-# accounting for >=80% of its tagged rows and that ID belongs to one folder.
 canonical_id_to_subject=defaultdict(list)
 for subject, counts in subject_id_counts_by_subject.items():
     total=sum(counts.values())
     if not total: continue
     top=counts.most_common()
     sid,n=top[0]
-    if (len(top)==1 or n>top[1][1]) and n/total >= 0.80:
+    if (len(top)==1 or n>top[1][1]) and n/total>=0.80:
         canonical_id_to_subject[sid].append(subject)
 canonical_id_to_subject={sid:subs for sid,subs in canonical_id_to_subject.items() if len(subs)==1}
 canonical_subject_by_id={sid:subs[0] for sid,subs in canonical_id_to_subject.items()}
+
+# Guarded cross-source metadata: only non-PYQ/non-qBank records with explicit
+# canonical subjects_id are eligible. Exact unique_key or exact normalized text
+# is required. Mere repetition in another test/module is never sufficient.
+cross_unique_key=defaultdict(set)
+cross_text=defaultdict(set)
+cross_evidence=defaultdict(list)
+for p in SRC.rglob("*.json"):
+    if PYQ in p.parents or QB in p.parents: continue
+    data=load_json(p)
+    if data is None: continue
+    rows=data if isinstance(data,list) else data.get("questions",data.get("data",[]))
+    if not isinstance(rows,list): continue
+    rel=str(p.relative_to(SRC)).replace(os.sep,"/")
+    for row in rows:
+        if not isinstance(row,dict): continue
+        sids=[n for sid in (row.get("subjects_id") or []) if (n:=to_int(sid)) is not None]
+        if not sids or not all(sid in canonical_subject_by_id for sid in sids): continue
+        candidates={canonical_subject_by_id[sid] for sid in sids}
+        if len(candidates)!=1: continue
+        subject=next(iter(candidates))
+        uk=row.get("unique_key")
+        if uk:
+            key=str(uk)
+            cross_unique_key[key].add(subject)
+            cross_evidence[("uk",key)].append({"subject":subject,"file":rel})
+        nk=norm(row.get("question") or row.get("question_text") or row.get("text"))
+        if nk and len(nk)>=20:
+            cross_text[nk].add(subject)
+            cross_evidence[("text",nk)].append({"subject":subject,"file":rel})
 
 VIDEO_SUBJECT_ALIASES={
     "biochemistry":"Biochemistry","physiology":"Physiology","anatomy":"Anatomy",
@@ -98,13 +119,13 @@ def video_subject_candidates(row):
     for u in urls:
         name=re.sub(r"[^a-z0-9]+"," ",u)
         for alias,subject in VIDEO_SUBJECT_ALIASES.items():
-            if re.search(rf"\b{re.escape(alias)}\b",name):
-                found.add(subject)
+            if re.search(rf"\b{re.escape(alias)}\b",name): found.add(subject)
     return found
 
 summary=defaultdict(lambda:{"files":0,"questions":0,"subject_id_mapped":0,"canonical_subject_id_mapped":0,
                             "qbank_id_mapped":0,"qbank_unique_key_mapped":0,"qbank_map_id_mapped":0,"qbank_choice_id_mapped":0,
-                            "video_subject_mapped":0,"exact_mapped":0,"subject_mapped":0,"unresolved":0,"ambiguous":0})
+                            "video_subject_mapped":0,"cross_source_unique_key_mapped":0,"cross_source_text_mapped":0,
+                            "exact_mapped":0,"subject_mapped":0,"unresolved":0,"ambiguous":0})
 records=[]
 
 for p in sorted(PYQ.rglob("*.json")):
@@ -122,11 +143,7 @@ for p in sorted(PYQ.rglob("*.json")):
         q=row.get("question") or row.get("question_text") or row.get("text") or ""
         source_id=row.get("id") if row.get("id") is not None else row.get("question_id")
         source_id_int=to_int(source_id)
-        source_sids=[]
-        for sid in row.get("subjects_id") or []:
-            n=to_int(sid)
-            if n is not None: source_sids.append(n)
-
+        source_sids=[n for sid in (row.get("subjects_id") or []) if (n:=to_int(sid)) is not None]
         raw_candidates=set()
         id_evidence={}
         for sid in source_sids:
@@ -141,13 +158,11 @@ for p in sorted(PYQ.rglob("*.json")):
             evidence="source.subjects_id -> qBank canonical subject ID"
             summary[year]["canonical_subject_id_mapped"]+=1
             summary[year]["subject_id_mapped"]+=1
-
         elif source_sids and len(raw_candidates)==1 and all(len(subject_id_to_subject.get(sid,set()))==1 for sid in source_sids):
             subjects=sorted(raw_candidates)
             status="MAPPED_SUBJECT_ID"
             evidence="source.subjects_id -> qBank subject"
             summary[year]["subject_id_mapped"]+=1
-
         else:
             video_candidates=video_subject_candidates(row)
             if len(video_candidates)==1:
@@ -163,7 +178,8 @@ for p in sorted(PYQ.rglob("*.json")):
                     evidence="source.id -> qBank.id exact match"
                     summary[year]["qbank_id_mapped"]+=1
                 else:
-                    uk_candidates=qbank_unique_key_to_subject.get(str(row.get("unique_key")),set()) if row.get("unique_key") else set()
+                    uk=str(row.get("unique_key")) if row.get("unique_key") else None
+                    uk_candidates=qbank_unique_key_to_subject.get(uk,set()) if uk else set()
                     if len(uk_candidates)==1:
                         subjects=sorted(uk_candidates)
                         status="MAPPED_QBANK_UNIQUE_KEY"
@@ -191,23 +207,45 @@ for p in sorted(PYQ.rglob("*.json")):
                                 evidence="source.choices[].id -> qBank.choices[].id exact subject linkage"
                                 summary[year]["qbank_choice_id_mapped"]+=1
                             else:
-                                subjects=sorted(exact.get(norm(q),set()))
-                                if len(subjects)==1:
-                                    status="MAPPED_EXACT"
-                                    evidence="unique exact normalized question text -> qBank subject"
-                                    summary[year]["exact_mapped"]+=1
-                                elif len(subjects)>1:
+                                nk=norm(q)
+                                cands=cross_unique_key.get(str(row.get("unique_key")),set()) if row.get("unique_key") else set()
+                                text_cands=cross_text.get(nk,set())
+                                if len(cands)==1:
+                                    subjects=sorted(cands)
+                                    status="MAPPED_CROSS_SOURCE_UNIQUE_KEY_METADATA"
+                                    evidence="exact unique_key -> non-PYQ/non-qBank source with explicit canonical subjects_id"
+                                    summary[year]["cross_source_unique_key_mapped"]+=1
+                                elif len(cands)>1:
                                     subjects=[]
-                                    status="AMBIGUOUS_EXACT"
-                                    evidence="multiple qBank subjects matched exact text"
+                                    status="AMBIGUOUS_CROSS_SOURCE_UNIQUE_KEY"
+                                    evidence="exact unique_key matched multiple explicit canonical subjects"
+                                elif len(text_cands)==1:
+                                    subjects=sorted(text_cands)
+                                    status="MAPPED_CROSS_SOURCE_TEXT_METADATA"
+                                    evidence="exact normalized question text -> non-PYQ/non-qBank source with explicit canonical subjects_id"
+                                    summary[year]["cross_source_text_mapped"]+=1
+                                elif len(text_cands)>1:
+                                    subjects=[]
+                                    status="AMBIGUOUS_CROSS_SOURCE_TEXT"
+                                    evidence="exact normalized question text matched multiple explicit canonical subjects"
                                 else:
-                                    subjects=[]
-                                    status="UNRESOLVED"
-                                    evidence="no source-derived unique mapping"
+                                    subjects=sorted(exact.get(nk,set()))
+                                    if len(subjects)==1:
+                                        status="MAPPED_EXACT"
+                                        evidence="unique exact normalized question text -> qBank subject"
+                                        summary[year]["exact_mapped"]+=1
+                                    elif len(subjects)>1:
+                                        subjects=[]
+                                        status="AMBIGUOUS_EXACT"
+                                        evidence="multiple qBank subjects matched exact text"
+                                    else:
+                                        subjects=[]
+                                        status="UNRESOLVED"
+                                        evidence="no source-derived unique mapping"
 
         if status.startswith("MAPPED_"):
             summary[year]["subject_mapped"]+=1
-        elif status=="AMBIGUOUS_EXACT":
+        elif status.startswith("AMBIGUOUS_") or status=="AMBIGUOUS_EXACT":
             summary[year]["ambiguous"]+=1
         else:
             summary[year]["unresolved"]+=1
@@ -236,20 +274,18 @@ audit={
     "mapped_qbank_map_id":sum(v["qbank_map_id_mapped"] for v in summary.values()),
     "mapped_qbank_choice_id":sum(v["qbank_choice_id_mapped"] for v in summary.values()),
     "mapped_video_subject_metadata":sum(v["video_subject_mapped"] for v in summary.values()),
+    "mapped_cross_source_unique_key_metadata":sum(v["cross_source_unique_key_mapped"] for v in summary.values()),
+    "mapped_cross_source_text_metadata":sum(v["cross_source_text_mapped"] for v in summary.values()),
     "mapped_exact":sum(v["exact_mapped"] for v in summary.values()),
     "mapped_total":sum(v["subject_mapped"] for v in summary.values()),
     "ambiguous_exact":sum(v["ambiguous"] for v in summary.values()),
     "unresolved":sum(v["unresolved"] for v in summary.values()),
-    "subject_id_index_entries":len(subject_id_to_subject),
-    "qbank_id_index_entries":len(qbank_id_to_subject),
-    "qbank_unique_key_index_entries":len(qbank_unique_key_to_subject),
-    "qbank_map_id_index_entries":len(qbank_map_id_to_subject),
-    "qbank_choice_id_index_entries":len(qbank_choice_id_to_subject),
+    "cross_source_unique_key_index_entries":len(cross_unique_key),
+    "cross_source_text_index_entries":len(cross_text),
     "canonical_subject_count":len(canonical_subject_by_id),
     "canonical_subject_by_id":{str(k):v for k,v in sorted(canonical_subject_by_id.items())},
-    "policy":"Use explicit source subjects_id first. If absent/unusable, use exact source id/unique_key/map_id/choice-id linkage to qBank records only when the linkage resolves to exactly one qBank subject folder. Then use unique exact normalized question text. Never infer subject from question content."
+    "policy":"Explicit source subjects_id first; exact qBank id/unique_key/map_id/choice-id next; then exact unique_key or exact normalized question text against non-PYQ/non-qBank records carrying explicit canonical subjects_id; then unique exact qBank text. Never infer subject from content or mere duplication across tests/modules."
 }
-
 (Path(OUT/"pyq_records.json")).write_text(json.dumps(records,ensure_ascii=False,indent=2),encoding="utf-8")
 (Path(OUT/"pyq_year_summary.json")).write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding="utf-8")
 (Path(OUT/"pyq_audit.json")).write_text(json.dumps(audit,ensure_ascii=False,indent=2),encoding="utf-8")
