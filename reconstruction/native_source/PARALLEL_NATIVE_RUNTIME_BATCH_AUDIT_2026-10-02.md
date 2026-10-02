@@ -59,3 +59,18 @@ The next meaningful promotion gate is either:
 2. if exact-bundle transfer remains technically unavailable, perform a single consolidated fallback APK runtime/content audit and record the boundary explicitly.
 
 No Marrow/Prepladder assets, routes, classes, or content are to enter either path.
+
+## Gate correction
+
+The Host Source Gate initially failed because it incorrectly required all 13 forensic native classes under app/src/main/java. The exact forensic class set is intentionally retained under reconstruction/native_source/cerebellummobileapp until dependency/resource promotion is proven. The gate was corrected to validate the 13-class evidence set there while requiring the two active fallback host classes in app/. No forensic source was copied into the active fallback runtime merely to satisfy the gate.
+
+## Artifact-level QA
+
+The downloaded fallback artifact payload was inspected:
+- 11 UI parts plus README present
+- concatenated UI payload: 7,467,114 bytes
+- concatenated UI payload SHA-256: 0cc6dad1bdc4506971d5d80fbd6ac4208562e27f53e294dd6794c352d17c739d
+- major Cerebellum route vocabulary present: home, qbank, pyq, grand-test, chapter, subject, video-category, video-category-units, test, test-analytics, notes, notes-page, flashcard, profile and related API routes
+- zero com.marrow/marrow/prepladder strings found in classes.dex, classes2.dex, or concatenated UI payload
+
+This artifact is still the fallback HTML runtime and is not represented as the exact recovered Hermes runtime.
