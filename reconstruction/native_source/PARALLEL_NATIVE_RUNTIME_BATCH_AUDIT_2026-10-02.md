@@ -124,3 +124,13 @@ The exact recovered Hermes bundle remains NOT PROMOTED:
 - SHA-256: d0e2d33a709316ae8fc55afd24b2540f6ab50e72ab2a9dbcaac419731be5afe2
 
 No regenerated JavaScript bundle is being substituted for the exact recovered runtime.
+
+## Final gate check after Home batch — commit 65f28a8343b4605eaac1e0d6d8717e3221f5017a
+
+- Cerebellum Contamination Barrier run 37032627146 — SUCCESS.
+- Cerebellum Host Source Gate run 37032627409 — BLOCKED/FAIL at **Verify exact Hermes bundle promotion gate** only.
+- Package boundary, 13-class forensic native-source set, evidence locks, and explicit anti-fabrication/full-build block all passed.
+- The failure is intentional evidence protection: the exact recovered Hermes bundle (11,206,868 bytes; SHA-256 d0e2d33a709316ae8fc55afd24b2540f6ab50e72ab2a9dbcaac419731be5afe2) is still not present in the active repository path, so the gate correctly refuses promotion.
+- No substitute/generated Hermes bundle was created to make the gate green.
+- The latest Home UI source remains verified and unchanged by this audit-only commit.
+
