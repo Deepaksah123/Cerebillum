@@ -18,26 +18,143 @@ function bottom(active){
 }
 
 function home(){
- const mods=[
-  ["src_assets_images_custommodule_qbankquestions","QBank","Practice questions"],
-  ["src_assets_images_custommodule_previousyearquestions","Previous Year","PYQs"],
-  ["src_assets_images_custommodule_grandtestquestions","Grand Test","Exam simulation"],
-  ["src_assets_images_custommodule_allquestions","All Questions","Complete bank"]
- ];
- return header("Home")+`<main class="content">
- <section class="hero"><div class="hero-copy"><div class="eyebrow">Cerebellum Academy</div><h1>Master your passion.</h1><p>Recorded lectures, QBank, tests and revision resources — reconstructed from the original APK client.</p></div><img src="${asset("src_assets_images_heroimg_homepage")}"></section>
- <div class="section-head"><h2>Quick access</h2><span>Original app assets</span></div>
- <div class="grid2">${mods.map(m=>`<article class="card module" onclick="nav('${m[1]==="QBank"?"/qbank":m[1]==="Grand Test"?"/grand-test":"/pyq"}')"><img src="${asset(m[0])}"><div><h3>${m[1]}</h3><p>${m[2]}</p></div></article>`).join("")}</div>
- <div class="section-head"><h2>Learning</h2><span>19 subjects</span></div>
- <div class="list">
-  <div class="row" onclick="nav('/subject')"><img class="thumb" src="${asset("src_assets_images_subjectdetailbackground")}"><div class="grow"><h3>Subject-wise learning</h3><p>Subjects → chapters → videos / QBank</p></div><b class="chev">›</b></div>
-  <div class="row" onclick="nav('/video-category')"><img class="thumb" src="${asset("src_assets_images_videoicon")}"><div class="grow"><h3>Recorded Videos</h3><p>Video categories and units</p></div><b class="chev">›</b></div>
-  <div class="row" onclick="nav('/notes')"><img class="thumb" src="${asset("src_assets_images_notesicon")}"><div class="grow"><h3>Notes</h3><p>Notes and short notes</p></div><b class="chev">›</b></div>
- </div>
- <div class="debug">Evidence: HomePage=${COMPONENTS.HomePage||0}; API base=${esc(API_BASE)}</div>
- </main>${bottom("/home")}`;
-}
+ const icon=(svg)=>`<span class="home-icon">${svg}</span>`;
+ const navIcon=(kind)=>{
+  const s={
+   home:'<svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5M9 21v-7h6v7"/></svg>',
+   video:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3z"/></svg>',
+   qbank:'<svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>',
+   test:'<svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>',
+   live:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M7 8a6 6 0 0 0 0 8M17 8a6 6 0 0 1 0 8M4 5a10 10 0 0 0 0 14M20 5a10 10 0 0 1 0 14"/></svg>'
+  }; return s[kind]||s.home;
+ };
+ const shortcut=(kind,label,route)=>{
+  const svg={
+   bookmark:'<svg viewBox="0 0 24 24"><path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18l-6-3-6 3z"/></svg>',
+   notes:'<svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
+   download:'<svg viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 21h14"/></svg>',
+   flash:'<svg viewBox="0 0 24 24"><rect x="5" y="4" width="12" height="15" rx="2"/><path d="m14 8 5 3-5 3"/></svg>'
+  }[kind];
+  return `<button class="shortcut" onclick="nav('${route}')">${icon(svg)}<span>${label}</span></button>`;
+ };
+ const bottomHome=`<nav class="home-bottom">
+  <button class="active" onclick="nav('/home')">${icon(navIcon('home'))}<span>Home</span></button>
+  <button onclick="nav('/video-category')">${icon(navIcon('video'))}<span>Videos</span></button>
+  <button onclick="nav('/qbank')">${icon(navIcon('qbank'))}<span>Qbank</span></button>
+  <button onclick="nav('/test')">${icon(navIcon('test'))}<span>Tests</span></button>
+  <button onclick="nav('/live-tests')">${icon(navIcon('live'))}<span>Live</span></button>
+ </nav>`;
 
+ return `<style>
+ .home-page{background:#fff;color:#17243a;padding:0 0 82px;font-family:Inter,Arial,sans-serif}
+ .home-head{display:flex;align-items:center;justify-content:space-between;padding:25px 28px 14px}
+ .home-greet h1{margin:0;font-family:Georgia,serif;font-size:36px;line-height:1.05;font-weight:500;color:#15233b}
+ .home-greet p{margin:6px 0 0;font-size:17px;color:#9aa0aa}
+ .home-head-actions{display:flex;gap:18px;align-items:center}
+ .home-head-actions button{border:0;background:transparent;color:#10213a;padding:4px}
+ .home-search svg{width:32px;height:32px}
+ .home-profile{width:50px;height:50px;border-radius:10px;background:#eaf4fc;display:grid;place-items:center}
+ .home-profile svg{width:31px;height:31px;stroke:#1387e8;fill:none;stroke-width:1.8}
+ .home-section{padding:0 28px}
+ .home-section-title{display:flex;align-items:center;justify-content:space-between;margin:24px 0 12px}
+ .home-section-title h2{font-size:22px;margin:0;font-weight:650;color:#16243b}
+ .home-mcq{border:1px solid #e3e7ec;border-radius:16px;padding:17px;background:#fff}
+ .home-mcq .meta{font-size:12px;color:#8b919b;margin-bottom:8px}
+ .home-mcq .q{font-size:16px;line-height:1.45;color:#17243a;margin-bottom:13px}
+ .home-mcq img{width:100%;max-height:180px;object-fit:contain;border-radius:10px;margin:3px 0 12px}
+ .home-options{display:grid;gap:9px}
+ .home-option{border:1px solid #e0e3e7;border-radius:12px;background:#fff;text-align:left;padding:11px 13px;font-size:14px;color:#26344b}
+ .home-option b{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#f4f6f8;margin-right:9px;font-weight:500}
+ .home-shortcuts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+ .shortcut{border:1px solid #dfeaf3;border-radius:12px;padding:14px 5px 12px;background:#f5faff;color:#4c5a6c;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px}
+ .shortcut:nth-child(2){background:#fff8f4;border-color:#f2e4dc}.shortcut:nth-child(3){background:#f4fbfb;border-color:#dcefed}.shortcut:nth-child(4){background:#f8f7ff;border-color:#e8e5f5}
+ .home-icon svg{width:27px;height:27px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+ .home-announcements{display:grid;gap:10px}
+ .announcement{display:flex;align-items:center;gap:12px;border:1px solid #e1e5ea;border-radius:15px;padding:10px;background:#fff}
+ .announcement img{width:76px;height:55px;object-fit:contain;border-radius:8px}
+ .announcement .grow{flex:1}.announcement h3{margin:0;font-size:14px;color:#24324a}.announcement p{margin:4px 0 0;font-size:11px;color:#9aa0aa}
+ .home-mentors{display:flex;gap:12px;overflow:hidden}
+ .mentor{min-width:175px;border:1px solid #e1e4e8;border-radius:14px;padding:10px 8px 14px;text-align:center;background:#fff}
+ .mentor .avatar{width:88px;height:88px;border-radius:50%;object-fit:cover;background:#eef3f8;margin:auto;display:block}
+ .mentor h3{font-size:14px;margin:8px 0 3px;color:#465267}.mentor p{font-size:12px;line-height:1.3;color:#a0a6af;margin:0}
+ .invite{border:1px solid #cfe5f6;border-radius:17px;background:#f3faff;padding:18px 18px 14px}
+ .invite-top{display:flex;gap:15px;align-items:center}.invite-top img{width:120px;height:85px;object-fit:contain}
+ .invite h3{margin:0;font-size:18px;line-height:1.35;font-weight:500}.share-btn{margin-top:10px;border:0;border-radius:12px;background:#1689ea;color:#fff;padding:12px 20px;font-size:16px;font-weight:650}
+ .ref{margin-top:12px;background:#e7f3fc;border-radius:13px;padding:12px 15px;display:flex;justify-content:space-between;align-items:center}.ref small{display:block;color:#667589}.ref strong{font-size:18px;color:#1387e8;letter-spacing:1px}.copy{border:1px solid #d1d4d8;border-radius:11px;background:#fff;padding:10px 13px;color:#2a364a;font-weight:600}
+ .quick{border:1px solid #cfe5f6;border-radius:17px;background:#f3faff;padding:18px}
+ .quick h3{margin:0 0 17px;font-size:19px}.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 25px}.quick-grid button{border:0;background:transparent;text-align:left;padding:0;color:#26344b;font-size:14px}
+ .home-bottom{position:fixed;left:0;right:0;bottom:0;height:68px;background:rgba(255,255,255,.98);border-top:1px solid #e7e9ec;display:grid;grid-template-columns:repeat(5,1fr);z-index:20}
+ .home-bottom button{border:0;background:transparent;color:#89909a;font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+ .home-bottom button.active{color:#1387e8}.home-bottom svg{width:25px;height:25px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+ @media(max-width:420px){.home-head{padding-left:27px;padding-right:27px}.home-greet h1{font-size:34px}.home-section{padding:0 27px}.home-shortcuts{gap:8px}.mentor{min-width:160px}}
+ </style>
+ <main class="home-page">
+  <header class="home-head">
+   <div class="home-greet"><h1>Hi, Deepak!</h1><p>NEET PG/INICET/NEXT</p></div>
+   <div class="home-head-actions">
+    <button class="home-search" aria-label="Search" onclick="nav('/qbank')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg></button>
+    <button class="home-profile" aria-label="Profile" onclick="nav('/profile')"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M5 20c.7-4.1 3-6.2 7-6.2s6.3 2.1 7 6.2M8 17v-3m8 3v-3"/></svg></button>
+   </div>
+  </header>
+
+  <section class="home-section">
+   <div class="home-section-title"><h2>MCQ of the Day</h2></div>
+   <article class="home-mcq">
+    <div class="meta">Daily practice</div>
+    <div class="q">The figure illustrates the mechanisms of action of various antiviral drugs targeting different stages of the influenza virus lifecycle. Baloxavir marboxil, an antiviral used to treat influenza, specifically inhibits a key enzyme required for viral mRNA synthesis. Which labelled step is inhibited?</div>
+    <img src="${asset("src_assets_images_question")}" alt="Question figure">
+    <div class="home-options">
+     <button class="home-option"><b>A</b>A</button><button class="home-option"><b>B</b>B</button><button class="home-option"><b>C</b>C</button><button class="home-option"><b>D</b>D</button>
+    </div>
+   </article>
+  </section>
+
+  <section class="home-section">
+   <div class="home-section-title"><h2>Shortcuts</h2></div>
+   <div class="home-shortcuts">
+    ${shortcut("bookmark","Bookmark","/bookmarked-questions")}
+    ${shortcut("notes","Notes","/notes")}
+    ${shortcut("download","Downloads","/video-category")}
+    ${shortcut("flash","Flashcards","/flashcard")}
+   </div>
+  </section>
+
+  <section class="home-section">
+   <div class="home-section-title"><h2>Announcements</h2></div>
+   <div class="home-announcements">
+    ${[
+      ["src_assets_images_accouncements_1","INI-CET NOV 2026 E&D Schedule","Important exam schedule"],
+      ["src_assets_images_accouncements_2","INI-CET 2026 Revision Schedule","Revision update"],
+      ["src_assets_images_accouncements_3","View All Announcements","Announcements"]
+    ].map(a=>`<article class="announcement"><img src="${asset(a[0])}"><div class="grow"><h3>${a[1]}</h3><p>${a[2]}</p></div></article>`).join("")}
+   </div>
+  </section>
+
+  <section class="home-section">
+   <div class="home-section-title"><h2>Meet Your Mentors</h2></div>
+   <div class="home-mentors">
+    ${[
+      ["Dr. Vivek Jain","Preventive & Social Medicine"],
+      ["Dr. Sparsh Gupta","Pathology"],
+      ["Mentor","Faculty"]
+    ].map((m,i)=>`<article class="mentor"><img class="avatar" src="${asset("src_assets_images_defaultuserprofile")}" alt=""><h3>${m[0]}</h3><p>${m[1]}</p></article>`).join("")}
+   </div>
+  </section>
+
+  <section class="home-section">
+   <div class="invite">
+    <div class="invite-top"><img src="${asset("src_assets_images_invitefriends")}" alt=""><div><h3>Invite friends to Cerebellum Academy and learn together!</h3><button class="share-btn" onclick="navigator.share?.({title:'Cerebellum Academy'})">↗&nbsp; Share App</button></div></div>
+    <div class="ref"><div><small>Referral Code</small><strong>OO5ZHJ</strong></div><button class="copy" onclick="navigator.clipboard?.writeText('OO5ZHJ')">▢&nbsp; Copy Code</button></div>
+   </div>
+  </section>
+
+  <section class="home-section">
+   <div class="quick"><h3>Quick Links</h3><div class="quick-grid">
+    <button>Privacy Policy</button><button>Terms & Conditions</button><button>Cancellation Policy</button><button>About Us</button><button>FAQs</button>
+   </div></div>
+  </section>
+ </main>${bottomHome}`;
+}
 function qbank(){
  return header("Question Bank")+`<main class="content">
  <div class="section-head"><h2>Question Bank</h2><span>Practice</span></div>
