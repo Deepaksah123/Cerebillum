@@ -1,6 +1,4 @@
-plugins {
-    id 'com.android.application'
-}
+plugins { id 'com.android.application' }
 
 android {
     namespace 'com.cerebellummobileapp'
@@ -14,12 +12,13 @@ android {
         versionName '1.16.2'
     }
 
-    buildFeatures {
-        buildConfig true
+    buildFeatures { buildConfig true }
+
+    sourceSets {
+        main {
+            assets.srcDirs += ["$rootDir/reconstruction/cerebellum_ui_chunks"]
+        }
     }
 }
 
-dependencies {
-    // React Native 0.81.0 dependency wiring must be finalized against the
-    // exact recovered dependency set before claiming a reproducible build.
-}
+dependencies { }
