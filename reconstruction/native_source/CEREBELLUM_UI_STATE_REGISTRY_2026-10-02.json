@@ -1,0 +1,47 @@
+{
+  "schema": "cerebellum-native-ui-state-registry-v1",
+  "package": "com.cerebellummobileapp",
+  "versionName": "1.16.2",
+  "versionCode": 172,
+  "reactNative": "0.81.0",
+  "hermes": true,
+  "sourceOfTruth": "exact recovered Cerebellum APK/decompiler archive",
+  "components": [
+    "HomePage","CustomModule","ChapterList","QbankQuestions","TestAnalytics",
+    "Review","Subject","SubjectDetails","SubjectOverview","SubjectAccess",
+    "SubjectCard","Video","Profile","Notes","Flashcard","Flashcards","PlanList"
+  ],
+  "routes": [
+    "/home","/qbank","/pyq","/grand-test","/chapter","/subject",
+    "/video-category","/video-category-units","/live-tests","/test",
+    "/test-analytics","/qbank/performance-analytics","/notes","/notes-page",
+    "/flashcard","/profile","/plans","/subscription"
+  ],
+  "apiEvidence": [
+    "/qbank","/questions-data","/question-details","/questions",
+    "/subject","/subjects","/chapter","/subject-video-detail",
+    "/video-category","/video-category-units","/video-session",
+    "/latest-video-session","/qbank-detail","/qbank-annotations",
+    "/qbank/performance-analytics","/testSessions","/test",
+    "/test-analytics","/session-result-summary",
+    "/mock_test/session-result-summary","/live-tests","/grand-test",
+    "/flashcard","/notes-page","/bookmarked-questions",
+    "/bookmarked-videos","/profile","/user-profile/me",
+    "/latest-session","/attempted-question","/subject-wise-qbank-analysis"
+  ],
+  "designEvidence": {
+    "fonts": ["Inter","OpenSauceOne","Besley"],
+    "tokenFamilies": [
+      "bg-customGray-*","bg-primary-*","bg-primary-blue","bg-primary-dark",
+      "error-*","success-*","secondary-*","extras-*",
+      "p-*","px-*","py-*","rounded-xl","rounded-2xl","rounded-full"
+    ]
+  },
+  "rules": [
+    "Do not infer missing UI behavior from screenshots.",
+    "Do not introduce Marrow/Prepladder identifiers or assets.",
+    "Do not replace exact Hermes bundle with regenerated JavaScript.",
+    "Do not force unresolved PYQ mappings.",
+    "Promote only evidence-backed states and transitions."
+  ]
+}
