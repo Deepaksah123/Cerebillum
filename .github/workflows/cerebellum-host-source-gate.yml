@@ -30,13 +30,15 @@ jobs:
             exit 1
           fi
 
-      - name: Verify native host class set
+      - name: Verify forensic native host class set
         shell: bash
         run: |
           set -euo pipefail
           for f in BuildConfig DeXModule DeXPackage DevOptionsModule DevOptionsPackage FullscreenChipOverlayPackage MainActivity MainApplication PipActionReceiver PipHelperModule PipHelperPackage ScreenshotModule ScreenshotPackage; do
-            test -f "app/src/main/java/com/cerebellummobileapp/$f.java"
+            test -f "reconstruction/native_source/cerebellummobileapp/$f.java"
           done
+          test -f "app/src/main/java/com/cerebellummobileapp/MainActivity.java"
+          test -f "app/src/main/java/com/cerebellummobileapp/MainApplication.java"
 
       - name: Verify evidence locks
         shell: bash
