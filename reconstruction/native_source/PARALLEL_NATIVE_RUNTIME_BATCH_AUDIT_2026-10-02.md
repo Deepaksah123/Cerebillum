@@ -74,3 +74,53 @@ The downloaded fallback artifact payload was inspected:
 - zero com.marrow/marrow/prepladder strings found in classes.dex, classes2.dex, or concatenated UI payload
 
 This artifact is still the fallback HTML runtime and is not represented as the exact recovered Hermes runtime.
+
+
+## Latest Home UI batch verification — commit 476aedfa9c51e7e781b5461fbf0a89d7b813a223
+
+- Contamination Barrier run 37030636479 — SUCCESS.
+- Fallback build run 37030636426 — SUCCESS.
+- Latest build artifact: app-debug.apk
+- Artifact ID: 11236459550
+- Artifact size: 5,090,103 bytes
+- GitHub artifact SHA-256: 40126cd7df23b472a86f064f7b2bd8f1ef25a0c1031a109f68ce0076a3702f60
+- Artifact expiry: 2026-10-16
+
+### Screenshot-backed Home structure implemented without promotional/ad blocks
+
+The Home fallback implementation in reconstruction/cerebellum_ui_chunks/11.part was checked directly at the committed source level.
+
+Verified functional sections:
+- greeting/header with search and profile actions
+- MCQ of the Day
+- Shortcuts: Bookmark, Notes, Downloads, Flashcards
+- Announcements
+- Meet Your Mentors
+- Share App / Referral Code
+- Quick Links
+- bottom navigation: Home, Videos, Qbank, Tests, Live
+
+Verified app-owned asset keys referenced by the Home implementation:
+- src_assets_images_question
+- src_assets_images_invitefriends
+- src_assets_images_defaultuserprofile
+- src_assets_images_accouncements_1
+- src_assets_images_accouncements_2
+- src_assets_images_accouncements_3
+
+Promotional/ad content was explicitly excluded from this Home implementation. Source-level checks found no Mission 4.0, High-Yield FlashCards, promotional, advertisement, or promo strings in the Home implementation block.
+
+Important evidence boundary:
+- The user-provided Home screenshots were used only as visual QA/reference.
+- Screenshots are not embedded or cropped into the APK UI.
+- Mentor photos were not fabricated from screenshots; the implementation uses the verified default-profile asset because those specific mentor photographs were not established as exact APK-owned static assets.
+- The current fallback remains a functional evidence-backed reconstruction layer, not the exact recovered Hermes RN runtime.
+
+### Exact runtime status
+
+The exact recovered Hermes bundle remains NOT PROMOTED:
+- authoritative path: resources/assets/index.android.bundle
+- size: 11,206,868 bytes
+- SHA-256: d0e2d33a709316ae8fc55afd24b2540f6ab50e72ab2a9dbcaac419731be5afe2
+
+No regenerated JavaScript bundle is being substituted for the exact recovered runtime.
