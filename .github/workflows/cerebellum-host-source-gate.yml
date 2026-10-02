@@ -62,7 +62,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -q "11206868" reconstruction/native_source/HERMES_BUNDLE_PROMOTION_GATE_2026-10-02.md
+          grep -q "11,206,868" reconstruction/native_source/HERMES_BUNDLE_PROMOTION_GATE_2026-10-02.md
           grep -q "d0e2d33a709316ae8fc55afd24b2540f6ab50e72ab2a9dbcaac419731be5afe2" reconstruction/native_source/HERMES_BUNDLE_PROMOTION_GATE_2026-10-02.md
           test -f app/src/main/assets/README.txt
           ! test -f app/src/main/assets/index.android.bundle
