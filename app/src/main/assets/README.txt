@@ -1,0 +1,1 @@
+Cerebellum exact bundle slot. The authoritative Hermes bytecode is resources/assets/index.android.bundle from the genuine base (1).apk_Decompiler.com.zip, size 11206868 bytes, SHA-256 d0e2d33a709316ae8fc55afd24b2540f6ab50e72ab2a9dbcaac419731be5afe2. This placeholder must not be used as runtime bundle until exact bytes are promoted.
