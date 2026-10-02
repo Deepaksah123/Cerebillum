@@ -6,7 +6,8 @@ const API_BASE="https://app.cerebellumacademy.com/api/v1";
 
 const esc=s=>String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const asset=n=>A[n]||"";
-const initialRoute=(location.hash&&location.hash.length>1)?decodeURIComponent(location.hash.slice(1)):"/home";\nconst state={route:initialRoute,qLocked:false,selected:null};
+const initialRoute=(location.hash&&location.hash.length>1)?decodeURIComponent(location.hash.slice(1)):"/home";
+const state={route:initialRoute,qLocked:false,selected:null};
 
 function nav(route){state.route=route;history.pushState({route}, "", "#"+encodeURIComponent(route));render();window.scrollTo({top:0,behavior:"instant"})}
 function header(title="Cerebellum"){
@@ -239,7 +240,9 @@ function render(){
  }
  document.getElementById("app").innerHTML=h;
 }
-window.addEventListener("popstate",()=>{state.route=(location.hash&&location.hash.length>1)?decodeURIComponent(location.hash.slice(1)):"/home";render()});\nwindow.addEventListener("hashchange",()=>{state.route=(location.hash&&location.hash.length>1)?decodeURIComponent(location.hash.slice(1)):"/home";render()});\nrender();
+window.addEventListener("popstate",()=>{state.route=(location.hash&&location.hash.length>1)?decodeURIComponent(location.hash.slice(1)):"/home";render()});
+window.addEventListener("hashchange",()=>{state.route=(location.hash&&location.hash.length>1)?decodeURIComponent(location.hash.slice(1)):"/home";render()});
+render();
 </script>
 </body>
 </html>
