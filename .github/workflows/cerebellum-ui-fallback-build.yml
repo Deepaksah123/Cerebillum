@@ -1,4 +1,5 @@
 name: Cerebellum UI Fallback Build
+# Parallel-install identity fix verification build
 
 on:
   push:
