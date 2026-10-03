@@ -1,11 +1,11 @@
 plugins { id 'com.android.application' }
 
 android {
-    namespace 'com.cerebellummobileapp'
+    namespace 'com.cerebellummobileapp.reconstructed'
     compileSdk 36
 
     defaultConfig {
-        applicationId 'com.cerebellummobileapp'
+        applicationId 'com.cerebellummobileapp.reconstructed'
         minSdk 26
         targetSdk 36
         versionCode 172
