@@ -19,23 +19,19 @@ public final class MainApplication extends Application implements ReactApplicati
         @Override protected List<ReactPackage> getPackages() { return new ArrayList<>(); }
         @Override protected String getJSMainModuleName() { return "index"; }
         @Override protected boolean isNewArchEnabled() { return true; }
-        @Override protected Boolean isHermesEnabled() { return true; }
+        @Override protected boolean isHermesEnabled() { return true; }
     };
 
     @Override public ReactNativeHost getReactNativeHost() { return reactNativeHost; }
 
     @Override public ReactHost getReactHost() {
         Context applicationContext = getApplicationContext();
-        return DefaultReactHost.getDefaultReactHost$default(
-            applicationContext, reactNativeHost, null, 4, null
-        );
+        return DefaultReactHost.getDefaultReactHost(applicationContext, reactNativeHost, null);
     }
 
     @Override public void onCreate() {
         super.onCreate();
         SoLoader.init(this, false);
-        if (reactNativeHost.isNewArchEnabled()) {
-            DefaultNewArchitectureEntryPoint.load();
-        }
+        DefaultNewArchitectureEntryPoint.load();
     }
 }
