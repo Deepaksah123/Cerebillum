@@ -50,19 +50,21 @@ jobs:
           grep -q 'minSdk 26' app/build.gradle
           grep -q 'targetSdk 36' app/build.gradle
 
-      - name: Explicitly block unproven full build
+      - name: Verify exact Hermes bundle promotion
         shell: bash
         run: |
           set -euo pipefail
-          test ! -f app/src/main/assets/index.android.bundle
-          echo "PASS: exact Hermes bundle is not being fabricated or replaced."
-          echo "Build remains gated until the exact bundle, dependency lock, manifest/resources are promoted from verified evidence."
-
-      - name: Verify exact Hermes bundle promotion gate
-        shell: bash
-        run: |
-          set -euo pipefail
+          test -f reconstruction/native_source/index.android.bundle
+          test "$(wc -c < reconstruction/native_source/index.android.bundle | tr -d ' ')" = "11206868"
+          actual_sha="$(sha256sum reconstruction/native_source/index.android.bundle | awk '{print $1}')"
+          test "$actual_sha" = "d0e2d33a709316ae8fc55afd24b2540f6ab50e72ab2a9dbcaac419731be5afe2"
           grep -q "11,206,868" reconstruction/native_source/HERMES_BUNDLE_PROMOTION_GATE_2026-10-02.md
           grep -q "d0e2d33a709316ae8fc55afd24b2540f6ab50e72ab2a9dbcaac419731be5afe2" reconstruction/native_source/HERMES_BUNDLE_PROMOTION_GATE_2026-10-02.md
-          test -f app/src/main/assets/README.txt
+          echo "PASS: exact authoritative Hermes bundle is present and hash-verified."
+
+      - name: Verify no generated bundle replacement is present
+        shell: bash
+        run: |
+          set -euo pipefail
           ! test -f app/src/main/assets/index.android.bundle
+          echo "PASS: no generated/replacement bundle is present in fallback assets."
