@@ -13,14 +13,15 @@ Previous closure commit: 2ff72e828475b1dd4f4c4c0534f734dbd4c0c4ac
 - Artifact ID: 11246271700
 - Artifact SHA-256: 11ba221ae1211b837f65380914851ec77ee31aa0580189aee7a3d6d3877798ed
 
-### Exact Hermes bundle — NOW RECOVERED FROM USER-PROVIDED ORIGINAL APK
+### Exact Hermes bundle — RECOVERED AND PROMOTED
 Source file: user-provided base (1).apk
 APK entry: assets/index.android.bundle
-Extracted local file: index.android.bundle
+Repository path: reconstruction/native_source/index.android.bundle
 Size: 11,206,868 bytes
 SHA-256: d0e2d33a709316ae8fc55afd24b2540f6ab50e72ab2a9dbcaac419731be5afe2
+Repository blob SHA: aafb1927c12506b49101cc6091a0b48fbd06ff4d
 
-This is an exact byte-for-byte match to the previously locked authoritative Hermes evidence. It is NOT generated, inferred, or reconstructed.
+This is the exact byte-for-byte bundle extracted from the original APK and hash-verified before promotion. It is NOT generated, inferred, or reconstructed.
 
 ### Evidence boundary
 - React Native 0.81.0, Hermes and New Architecture remain locked evidence.
@@ -29,13 +30,10 @@ This is an exact byte-for-byte match to the previously locked authoritative Herm
 - No cross-project Marrow/Prepladder contamination is allowed.
 
 ### Promotion status
-The exact bundle has been extracted and hash-verified locally. Repository binary promotion requires a binary-capable GitHub upload path; the connected GitHub file API exposed here accepts text/base64 blobs but does not provide a local-file upload operation. Therefore the exact bundle must not be represented as committed to GitHub until that binary transfer is actually performed.
+The exact binary is now present at the required repository path. The previous binary-transfer blocker is closed.
 
 ### Next executable gate
-Once the verified binary is placed at:
-reconstruction/native_source/index.android.bundle
-the source gate can promote it and the genuine RN/Hermes runtime build can proceed.
+Run the source gate and contamination barrier against the promoted binary. If those pass, proceed to genuine RN/Hermes runtime integration/build and verify the resulting APK contains the exact authoritative bundle and launches successfully.
 
 ## Status
-Exact Hermes evidence dependency is no longer missing locally: the original APK has supplied the exact binary.
-Remaining work is binary promotion into the reconstruction build path, then genuine RN/Hermes build and runtime verification.
+Exact Hermes evidence dependency is closed at the repository source level. Genuine RN/Hermes build and runtime verification remain pending.
