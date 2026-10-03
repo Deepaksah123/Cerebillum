@@ -1,4 +1,4 @@
-package com.cerebellummobileapp.reconstructed;
+package com.cerebellummobileapp;
 
 import android.os.Bundle;
 import com.facebook.react.ReactActivity;

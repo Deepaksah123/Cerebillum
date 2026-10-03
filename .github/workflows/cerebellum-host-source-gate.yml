@@ -24,7 +24,6 @@ jobs:
           test -f settings.gradle
           test -f build.gradle
           test -d app/src/main/java/com/cerebellummobileapp
-
           if grep -RniE 'com\.marrow|com/marrow|marrow2|prepladder' app reconstruction/native_source/cerebellummobileapp; then
             echo "Forbidden contamination detected"
             exit 1
@@ -37,14 +36,14 @@ jobs:
           for f in BuildConfig DeXModule DeXPackage DevOptionsModule DevOptionsPackage FullscreenChipOverlayPackage MainActivity MainApplication PipActionReceiver PipHelperModule PipHelperPackage ScreenshotModule ScreenshotPackage; do
             test -f "reconstruction/native_source/cerebellummobileapp/$f.java"
           done
-          test -f "app/src/main/java/com/cerebellummobileapp/reconstructed/MainActivity.java"
-          test -f "app/src/main/java/com/cerebellummobileapp/reconstructed/MainApplication.java"
+          test -f "app/src/main/java/com/cerebellummobileapp/MainActivity.java"
+          test -f "app/src/main/java/com/cerebellummobileapp/MainApplication.java"
 
       - name: Verify evidence locks
         shell: bash
         run: |
           set -euo pipefail
-          grep -q 'com.cerebellummobileapp' app/build.gradle
+          grep -q 'com.cerebellummobileapp.reconstructed' app/build.gradle
           grep -q "versionCode 172" app/build.gradle
           grep -q "versionName '1.16.2'" app/build.gradle
           grep -q 'minSdk 26' app/build.gradle

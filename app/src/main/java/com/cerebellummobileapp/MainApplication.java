@@ -1,4 +1,4 @@
-package com.cerebellummobileapp.reconstructed;
+package com.cerebellummobileapp;
 
 import android.app.Application;
 import android.content.Context;

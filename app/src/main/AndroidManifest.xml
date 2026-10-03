@@ -1,13 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.cerebellummobileapp.reconstructed">
     <application
-        android:name=".MainApplication"
+        android:name="com.cerebellummobileapp.MainApplication"
         android:resizeableActivity="true"
         android:usesCleartextTraffic="false"
         android:label="Cerebellum"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher">
         <activity
-            android:name=".MainActivity"
+            android:name="com.cerebellummobileapp.MainActivity"
             android:exported="true"
             android:screenOrientation="unspecified">
             <intent-filter>
