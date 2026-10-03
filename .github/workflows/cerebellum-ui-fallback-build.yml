@@ -8,6 +8,7 @@ on:
       - 'settings.gradle'
       - 'build.gradle'
       - 'gradle.properties'
+      - '.github/workflows/cerebellum-ui-fallback-build.yml'
   workflow_dispatch:
 
 jobs:
