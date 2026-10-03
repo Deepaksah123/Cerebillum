@@ -32,8 +32,23 @@ This is the exact byte-for-byte bundle extracted from the original APK and hash-
 ### Promotion status
 The exact binary is now present at the required repository path. The previous binary-transfer blocker is closed.
 
-### Next executable gate
-Run the source gate and contamination barrier against the promoted binary. If those pass, proceed to genuine RN/Hermes runtime integration/build and verify the resulting APK contains the exact authoritative bundle and launches successfully.
+### Verified RN/Hermes build
+- React Native Android runtime dependencies: react-android 0.81.0 + hermes-android 0.81.0
+- Genuine RN MainActivity/MainApplication host wired; WebView fallback MainActivity removed from active app source.
+- AndroidX/Gradle configuration fixed and build completed successfully.
+- Build workflow run: 37091547234
+- APK artifact: app-debug.apk
+- Artifact ID: 11261779629
+- Artifact size: 107,536,009 bytes
+- Artifact SHA-256: c3b4260dc9d8b9442d7ad07546d842ba6fec3d142e12977f6283263145a0d5b
+- APK forensic verification passed:
+  - assets/index.android.bundle size: 11,206,868 bytes
+  - assets/index.android.bundle SHA-256: d0e2d33a709316ae8fc55afd24b2540f6ab50e72ab2a9dbcaac419731be5afe2
+  - React Native Activity reference present in APK dex.
+- Host source gate and contamination barrier remain passing.
+
+### Remaining executable QA
+Install the generated APK on a real Android device/emulator and verify cold launch, JS bundle execution, Home screen rendering, navigation, and any native-module-dependent flows. This runtime QA has not yet been performed in the connected environment.
 
 ## Status
-Exact Hermes evidence dependency is closed at the repository source level. Genuine RN/Hermes build and runtime verification remain pending.
+Repository evidence, exact Hermes binary promotion, genuine RN/Hermes compilation, APK payload verification, and contamination/source gates are closed. Real-device runtime/UI QA remains pending.
