@@ -37,8 +37,8 @@ jobs:
           for f in BuildConfig DeXModule DeXPackage DevOptionsModule DevOptionsPackage FullscreenChipOverlayPackage MainActivity MainApplication PipActionReceiver PipHelperModule PipHelperPackage ScreenshotModule ScreenshotPackage; do
             test -f "reconstruction/native_source/cerebellummobileapp/$f.java"
           done
-          test -f "app/src/main/java/com/cerebellummobileapp/MainActivity.java"
-          test -f "app/src/main/java/com/cerebellummobileapp/MainApplication.java"
+          test -f "app/src/main/java/com/cerebellummobileapp/reconstructed/MainActivity.java"
+          test -f "app/src/main/java/com/cerebellummobileapp/reconstructed/MainApplication.java"
 
       - name: Verify evidence locks
         shell: bash
