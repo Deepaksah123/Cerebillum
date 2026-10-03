@@ -7,6 +7,7 @@ on:
       - 'reconstruction/cerebellum_ui_chunks/**'
       - 'settings.gradle'
       - 'build.gradle'
+      - 'gradle.properties'
   workflow_dispatch:
 
 jobs:
