@@ -3,7 +3,9 @@
         android:name=".MainApplication"
         android:resizeableActivity="true"
         android:usesCleartextTraffic="false"
-        android:label="Cerebellum">
+        android:label="Cerebellum"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round">
         <activity
             android:name=".MainActivity"
             android:exported="true"
