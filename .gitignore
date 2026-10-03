@@ -1,0 +1,13 @@
+# Android / Gradle build outputs
+.gradle/
+build/
+app/build/
+
+# Local Android signing material
+*.jks
+*.keystore
+*.p12
+*.pem
+
+# Local SDK configuration
+local.properties
