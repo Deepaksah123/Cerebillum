@@ -1,0 +1,80 @@
+name: Cerebellum Signed Release APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'app/**'
+      - 'reconstruction/native_source/**'
+      - 'reconstruction/cerebellum_ui_chunks/**'
+      - 'settings.gradle'
+      - 'build.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/cerebellum-signed-release.yml'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Prepare CI signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v               -keystore "$HOME/.android/debug.keystore"               -storepass android               -alias AndroidDebugKey               -keypass android               -keyalg RSA               -keysize 2048               -validity 10000               -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          test -f "$HOME/.android/debug.keystore"
+
+      - name: Build signed release APK
+        run: gradle --no-daemon :app:assembleRelease
+
+      - name: Verify APK alignment, signatures, and exact Hermes payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="app/build/outputs/apk/release/app-release.apk"
+          test -f "$apk"
+
+          bt="$(ls -1 "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          zipalign="$ANDROID_HOME/build-tools/$bt/zipalign"
+          apksigner="$ANDROID_HOME/build-tools/$bt/apksigner"
+
+          "$zipalign" -c -P 4 -v 4 "$apk" >/tmp/zipalign.txt
+          "$apksigner" verify --verbose --print-certs "$apk" | tee /tmp/apksigner.txt
+
+          grep -q "Verified using v1 scheme (JAR signing): true" /tmp/apksigner.txt
+          grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" /tmp/apksigner.txt
+
+          size="$(unzip -p "$apk" assets/index.android.bundle | wc -c | tr -d ' ')"
+          test "$size" = "11206868"
+          sha="$(unzip -p "$apk" assets/index.android.bundle | sha256sum | awk '{print $1}')"
+          test "$sha" = "d0e2d33a709316ae8fc55afd24b2540f6ab50e72ab2a9dbcaac419731be5afe2"
+
+          if unzip -p "$apk" classes.dex 2>/dev/null | strings | grep -Eq 'com[/\\.]facebook[/\\.]react[/\\.]ReactActivity'; then
+            echo "PASS: React Native Activity reference present."
+          else
+            echo "FAIL: React Native Activity reference not found."
+            exit 1
+          fi
+
+          echo "PASS: aligned, V1/V2 signed, exact Hermes bundle verified."
+
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: cerebellum-signed-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
+          archive: false
+          retention-days: 14
