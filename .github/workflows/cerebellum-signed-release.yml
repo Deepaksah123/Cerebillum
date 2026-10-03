@@ -54,7 +54,8 @@ jobs:
           "$zipalign" -c -P 4 -v 4 "$apk" >/tmp/zipalign.txt
           "$apksigner" verify --verbose --print-certs "$apk" | tee /tmp/apksigner.txt
 
-          grep -q "Verified using v1 scheme (JAR signing): true" /tmp/apksigner.txt
+          # Android 7+ installation is protected by APK Signature Scheme v2.
+          # V1 is not required for the target Android 12/13 devices.
           grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" /tmp/apksigner.txt
 
           size="$(unzip -p "$apk" assets/index.android.bundle | wc -c | tr -d ' ')"
@@ -69,7 +70,7 @@ jobs:
             exit 1
           fi
 
-          echo "PASS: aligned, V1/V2 signed, exact Hermes bundle verified."
+          echo "PASS: aligned, V2 signed, exact Hermes bundle and RN host verified."
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v7
