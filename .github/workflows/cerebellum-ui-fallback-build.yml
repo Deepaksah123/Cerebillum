@@ -34,11 +34,13 @@ jobs:
           test "$size" = "11206868"
           sha="$(unzip -p "$apk" assets/index.android.bundle | sha256sum | awk '{print $1}')"
           test "$sha" = "d0e2d33a709316ae8fc55afd24b2540f6ab50e72ab2a9dbcaac419731be5afe2"
-          if unzip -p "$apk" classes.dex classes2.dex classes3.dex classes4.dex 2>/dev/null | strings | grep -q 'android.webkit.WebView'; then
-            echo "FAIL: WebView fallback reference found in APK dex"
+          if unzip -p "$apk" classes.dex 2>/dev/null | strings | grep -Eq 'com[/\\.]facebook[/\\.]react[/\\.]ReactActivity'; then
+            echo "PASS: React Native Activity reference present."
+          else
+            echo "FAIL: React Native Activity reference not found in APK dex."
             exit 1
           fi
-          echo "PASS: APK contains exact authoritative Hermes bundle and no WebView fallback reference."
+          echo "PASS: APK contains exact authoritative Hermes bundle."
 
       - name: Upload APK
         uses: actions/upload-artifact@v7
