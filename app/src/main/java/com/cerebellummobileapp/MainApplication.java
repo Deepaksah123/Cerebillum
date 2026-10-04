@@ -16,7 +16,15 @@ import java.util.List;
 public final class MainApplication extends Application implements ReactApplication {
     private final ReactNativeHost reactNativeHost = new DefaultReactNativeHost(this) {
         @Override public boolean getUseDeveloperSupport() { return false; }
-        @Override protected List<ReactPackage> getPackages() { return new PackageList(this).getPackages(); }
+        @Override protected List<ReactPackage> getPackages() {
+            List<ReactPackage> packages = new PackageList(this).getPackages();
+            packages.add(new DevOptionsPackage());
+            packages.add(new DeXPackage());
+            packages.add(new ScreenshotPackage());
+            packages.add(new PipHelperPackage());
+            packages.add(new FullscreenChipOverlayPackage());
+            return packages;
+        }
         @Override protected String getJSMainModuleName() { return "index"; }
         @Override protected boolean isNewArchEnabled() { return true; }
         @Override protected boolean isHermesEnabled() { return true; }
