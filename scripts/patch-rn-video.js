@@ -18,4 +18,4 @@ const replacement = `private class EventBuilder(private val surfaceId: Int, priv
 `;
 source = source.slice(0, start) + replacement + source.slice(end);
 fs.writeFileSync(file, source);
-console.log('Applied deterministic react-native-video Event<Event<*>> compatibility patch.');
+console.log('Applied deterministic react-native-video VideoEvent compatibility patch.');
