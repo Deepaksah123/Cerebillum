@@ -26,5 +26,8 @@
   },
   "devDependencies": {
     "@react-native-community/cli": "20.0.0"
+  },
+  "scripts": {
+    "postinstall": "node scripts/patch-rn-video.js"
   }
 }
