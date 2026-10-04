@@ -18,6 +18,9 @@ android {
     buildFeatures { buildConfig true }
 
     react {
+        reactNativeDir = file("$rootDir/node_modules/react-native")
+        cliFile = file("$rootDir/node_modules/react-native/cli.js")
+        codegenDir = file("$rootDir/node_modules/@react-native/codegen")
         autolinkLibrariesWithApp()
 
         // The authoritative Hermes bundle is already recovered from the original APK.
