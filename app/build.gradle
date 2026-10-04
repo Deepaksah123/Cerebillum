@@ -1,4 +1,7 @@
-plugins { id 'com.android.application' }
+plugins {
+    id 'com.android.application'
+    id 'com.facebook.react'
+}
 
 android {
     namespace 'com.cerebellummobileapp.reconstructed'
@@ -13,6 +16,21 @@ android {
     }
 
     buildFeatures { buildConfig true }
+
+    react {
+        autolinkLibrariesWithApp()
+
+        // The authoritative Hermes bundle is already recovered from the original APK.
+        // Do not regenerate or overwrite it from a fabricated JS entry point.
+        debuggableVariants = []
+    }
+
+    // Preserve the byte-exact recovered Hermes bundle; RNGP must not re-bundle JS.
+    tasks.whenTaskAdded { task ->
+        if (task.name.startsWith("createBundle") && task.name.endsWith("JsAndAssets")) {
+            task.enabled = false
+        }
+    }
 
     // Release APKs must be signed so Android can install them.
     // CI uses the standard Android debug keystore when no production
