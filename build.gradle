@@ -4,4 +4,4 @@ plugins {
 }
 
 // Legacy RN native modules (e.g. Apple Authentication) resolve this property.
-ext.reactNativeAndroidRoot = file("$rootDir/node_modules/react-native/android")
+ext.reactNativeAndroidRoot = file("$rootDir/node_modules/react-native/ReactAndroid")
