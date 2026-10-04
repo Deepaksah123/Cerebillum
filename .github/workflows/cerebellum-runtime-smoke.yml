@@ -11,6 +11,7 @@ on:
       - 'gradle.properties'
       - 'package.json'
       - 'package-lock.json'
+      - 'scripts/**'
       - 'react-native.config.js'
       - '.github/workflows/cerebellum-runtime-smoke.yml'
   workflow_dispatch:
