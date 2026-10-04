@@ -5,3 +5,8 @@ plugins {
 
 // Legacy RN native modules (e.g. Apple Authentication) resolve this property.
 ext.reactNativeAndroidRoot = file("$rootDir/node_modules/react-native/ReactAndroid")
+ext.compileSdkVersion = 36
+ext.buildToolsVersion = "36.0.0"
+ext.minSdkVersion = 26
+ext.targetSdkVersion = 36
+ext.kotlinVersion = "1.8.0"
