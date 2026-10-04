@@ -1,0 +1,66 @@
+name: Cerebellum Runtime Smoke Build
+
+on:
+  push:
+    paths:
+      - 'app/**'
+      - 'reconstruction/native_source/**'
+      - 'reconstruction/cerebellum_ui_chunks/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/cerebellum-runtime-smoke.yml'
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Build signed release
+        run: gradle --no-daemon :app:assembleRelease
+
+      - name: Static runtime gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/release/app-release.apk
+          test -f "$apk"
+
+          # Exact Hermes payload must remain byte-for-byte identical.
+          size="$(unzip -p "$apk" assets/index.android.bundle | wc -c | tr -d ' ')"
+          sha="$(unzip -p "$apk" assets/index.android.bundle | sha256sum | awk '{print $1}')"
+          test "$size" = "11206868"
+          test "$sha" = "d0e2d33a709316ae8fc55afd24b2540f6ab50e72ab2a9dbcaac419731be5afe2"
+
+          # Native host must be the genuine RN host, not WebView fallback.
+          unzip -p "$apk" classes.dex | strings | grep -q 'com.cerebellummobileapp.MainActivity'
+          unzip -p "$apk" classes.dex | strings | grep -q 'com.cerebellummobileapp.MainApplication'
+
+          # PackageList must be compiled into the host after autolinking restoration.
+          unzip -p "$apk" classes.dex | strings | grep -q 'PackageList'
+
+          # Ensure the RN/Hermes native libraries are present.
+          unzip -l "$apk" | grep -q 'lib/.*libhermes'
+          unzip -l "$apk" | grep -q 'lib/.*libreactnative'
+
+          bt="$(ls -1 "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          "$ANDROID_HOME/build-tools/$bt/apksigner" verify --verbose --print-certs "$apk" | tee /tmp/sign.txt
+          grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' /tmp/sign.txt
+
+          echo "PASS: RN autolink host + Hermes payload + signing gates."
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: cerebellum-runtime-smoke-release
+          path: app/build/outputs/apk/release/app-release.apk
+          archive: false
+          retention-days: 14
