@@ -28,7 +28,6 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install RN native dependencies
         run: npm install --no-audit --no-fund
