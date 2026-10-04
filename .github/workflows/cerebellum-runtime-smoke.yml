@@ -49,6 +49,9 @@ jobs:
           npx @react-native-community/cli config > autolinking.json
           node -e "const fs=require(\"fs\"); const p=JSON.parse(fs.readFileSync(\"autolinking.json\",\"utf8\")); p.project=p.project||{}; p.project.android=Object.assign({},p.project.android||{}, {packageName:\"com.cerebellummobileapp.reconstructed\"}); fs.writeFileSync(\"autolinking.json\", JSON.stringify(p));"
 
+      - name: Generate RN native codegen artifacts
+        run: gradle --no-daemon generateCodegenArtifactsFromSchema
+
       - name: Build signed release
         run: gradle --no-daemon :app:assembleRelease
 
