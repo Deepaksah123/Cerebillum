@@ -34,6 +34,15 @@ jobs:
       - name: Install RN native dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Diagnose React Native autolinking
+        run: |
+          set +e
+          npx react-native config --verbose > /tmp/rn-config.out 2>&1
+          rc=$?
+          cat /tmp/rn-config.out
+          echo "RN_CONFIG_EXIT=$rc"
+          exit 0
+
       - name: Build signed release
         run: gradle --no-daemon :app:assembleRelease
 
