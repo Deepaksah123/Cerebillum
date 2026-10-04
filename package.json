@@ -8,7 +8,6 @@
     "@react-native/gradle-plugin": "0.81.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-clipboard/clipboard": "1.16.3",
-    "@react-native-community/cookies": "6.2.1",
     "@react-native-community/netinfo": "11.4.1",
     "@react-native-community/slider": "5.0.0",
     "@invertase/react-native-apple-authentication": "2.5.1",
@@ -22,7 +21,8 @@
     "react-native-webview": "13.14.1",
     "react-native-video": "6.13.0",
     "@hot-updater/react-native": "0.35.1",
-    "react-native-permissions": "5.4.2"
+    "react-native-permissions": "5.4.2",
+    "@react-native-cookies/cookies": "6.2.1"
   },
   "devDependencies": {
     "@react-native-community/cli": "20.0.0"
