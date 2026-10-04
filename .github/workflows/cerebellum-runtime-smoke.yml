@@ -45,7 +45,9 @@ jobs:
           exit 0
 
       - name: Generate deterministic RN autolinking config
-        run: npx @react-native-community/cli config > autolinking.json
+        run: |
+          npx @react-native-community/cli config > autolinking.json
+          node -e "const fs=require(\"fs\"); const p=JSON.parse(fs.readFileSync(\"autolinking.json\",\"utf8\")); p.project=p.project||{}; p.project.android=Object.assign({},p.project.android||{}, {packageName:\"com.cerebellummobileapp.reconstructed\"}); fs.writeFileSync(\"autolinking.json\", JSON.stringify(p));"
 
       - name: Build signed release
         run: gradle --no-daemon :app:assembleRelease
