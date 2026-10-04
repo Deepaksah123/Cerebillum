@@ -1,3 +1,7 @@
+ext {
+    reactNativeAndroidRoot = file("$rootDir/node_modules/react-native/android")
+}
+
 plugins {
     id 'com.android.application' version '8.11.0' apply false
     id 'com.facebook.react' apply false
