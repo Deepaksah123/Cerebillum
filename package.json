@@ -19,15 +19,11 @@
     "react-native-svg": "15.15.5",
     "react-native-vector-icons": "10.2.0",
     "react-native-webview": "13.14.1",
-    "react-native-video": "6.13.0",
     "@hot-updater/react-native": "0.35.1",
     "react-native-permissions": "5.4.2",
     "@react-native-cookies/cookies": "6.2.1"
   },
   "devDependencies": {
     "@react-native-community/cli": "20.0.0"
-  },
-  "scripts": {
-    "postinstall": "node scripts/patch-rn-video.js"
   }
 }
